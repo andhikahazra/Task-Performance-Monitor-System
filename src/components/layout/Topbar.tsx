@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   Menu,
   Bell,
   LogOut,
-  Palette,
   ChevronRight,
 } from "lucide-react";
 
@@ -26,18 +25,7 @@ export interface TopbarProps {
   unreadNotificationsCount?: number;
   onNotificationsClick?: () => void;
   onLogout?: () => void;
-  currentTheme?: string;
-  onThemeChange?: (theme: string) => void;
 }
-
-const themeOptions = [
-  { id: "light", label: "Light", color: "#2563eb" },
-  { id: "ocean", label: "Ocean", color: "#1e40af" },
-  { id: "emerald", label: "Emerald", color: "#0f766e" },
-  { id: "violet", label: "Violet", color: "#6d28d9" },
-  { id: "sunset", label: "Sunset", color: "#c2410c" },
-  { id: "midnight", label: "Midnight", color: "#1e293b" },
-];
 
 export const Topbar: React.FC<TopbarProps> = ({
   onOpenMobileSidebar,
@@ -51,48 +39,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   unreadNotificationsCount = 4,
   onNotificationsClick,
   onLogout,
-  currentTheme: propTheme,
-  onThemeChange,
 }) => {
-  const [activeTheme, setActiveTheme] = useState<string>("light");
-
-  useEffect(() => {
-    if (propTheme) {
-      setActiveTheme(propTheme);
-      return;
-    }
-    try {
-      const saved = localStorage.getItem("mm-theme") || "light";
-      setActiveTheme(saved);
-      document.documentElement.dataset.theme = saved;
-      if (saved === "midnight") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    } catch {
-      // Ignore localStorage errors
-    }
-  }, [propTheme]);
-
-  const handleThemeSelect = (newTheme: string) => {
-    setActiveTheme(newTheme);
-    try {
-      localStorage.setItem("mm-theme", newTheme);
-      document.documentElement.dataset.theme = newTheme;
-      if (newTheme === "midnight") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    } catch {
-      // Ignore
-    }
-    if (onThemeChange) {
-      onThemeChange(newTheme);
-    }
-  };
-
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/90 px-4 sm:px-6 backdrop-blur-md transition-colors dark:border-zinc-800 dark:bg-zinc-950/90">
       {/* Left: Mobile hamburger & Breadcrumbs */}
@@ -133,31 +80,12 @@ export const Topbar: React.FC<TopbarProps> = ({
         </nav>
       </div>
 
-      {/* Right: Actions, theme switch, notifications, user avatar & logout */}
+      {/* Right: Actions, notifications, user avatar & logout */}
       <div className="flex items-center gap-2 sm:gap-3">
         {/* Signed-in badge / indicator */}
         <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-medium dark:bg-zinc-800 dark:text-zinc-300">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
           <span>{user.email || "Akun demo"}</span>
-        </div>
-
-        {/* Theme Selector Dropdown */}
-        <div className="relative flex items-center">
-          <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-            <Palette className="h-3.5 w-3.5 text-slate-400" />
-            <select
-              value={activeTheme}
-              onChange={(e) => handleThemeSelect(e.target.value)}
-              className="bg-transparent pr-1 text-xs font-medium outline-none cursor-pointer"
-              aria-label="Pilih tema aplikasi"
-            >
-              {themeOptions.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
 
         {/* Notification Bell */}
