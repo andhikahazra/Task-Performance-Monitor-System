@@ -372,23 +372,22 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
 
       {/* Refined Modal Dialog */}
       <div className="relative z-10 w-full max-w-2xl rounded-2xl border border-slate-200/90 bg-white/95 backdrop-blur-xl shadow-2xl shadow-slate-900/20 overflow-hidden transition-all modal-dialog-animate dark:border-zinc-800/90 dark:bg-zinc-950/95 dark:shadow-black/60">
-        {/* Header Search Input */}
-        <div className="flex items-center gap-3.5 border-b border-slate-100 px-4 sm:px-5 py-3.5 sm:py-4 dark:border-zinc-800/80">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400 shrink-0">
-            <Search className="h-4 w-4" />
-          </div>
+        {/* Header Search Input Bar */}
+        <div className="relative flex items-center gap-3.5 px-4 sm:px-6 py-4 border-b border-slate-200/70 bg-white/60 dark:border-zinc-800/80 dark:bg-zinc-950/60">
+          <Search className="h-5 w-5 text-slate-400 dark:text-zinc-400 shrink-0 stroke-[2.2]" />
 
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cari menu, halaman, aksi cepat, atau tugas..."
-            className="w-full bg-transparent text-sm sm:text-base font-medium text-slate-900 placeholder:text-slate-400 outline-none dark:text-zinc-100 dark:placeholder:text-zinc-500"
+            placeholder="Cari menu, tugas, aksi cepat, atau halaman..."
+            className="w-full bg-transparent text-base sm:text-lg font-medium text-slate-900 placeholder:text-slate-400/90 outline-none dark:text-zinc-100 dark:placeholder:text-zinc-500"
           />
 
           {isLoadingTasks && (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-semibold dark:bg-blue-950/40 dark:text-blue-400 shrink-0 animate-pulse">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-medium dark:bg-blue-950/50 dark:text-blue-400 shrink-0 animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
               <span>Mencari...</span>
             </div>
           )}
@@ -400,44 +399,49 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
                 setQuery("");
                 inputRef.current?.focus();
               }}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 transition-colors"
-              title="Hapus teks pencarian"
+              className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+              title="Hapus pencarian"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </button>
           ) : (
-            <kbd className="hidden sm:inline-flex items-center rounded-md border border-slate-200/80 bg-slate-100/80 px-2 py-0.5 text-[10px] font-mono font-medium text-slate-500 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
-              ESC
-            </kbd>
+            <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+              <kbd className="inline-flex items-center rounded-md border border-slate-200/90 bg-slate-100/90 px-2 py-0.5 text-[11px] font-mono font-medium text-slate-500 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+                ESC
+              </kbd>
+            </div>
           )}
         </div>
 
-        {/* Filter Pills Bar */}
-        <div className="flex items-center gap-1.5 px-4 sm:px-5 py-2 border-b border-slate-100/80 bg-slate-50/50 dark:border-zinc-800/60 dark:bg-zinc-900/30 overflow-x-auto text-xs">
-          <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500 mr-1 shrink-0">
-            Kategori:
+        {/* Apple-style Segmented Filter Bar */}
+        <div className="flex items-center justify-between px-4 sm:px-6 py-2 border-b border-slate-100/90 bg-slate-50/60 dark:border-zinc-800/60 dark:bg-zinc-900/40">
+          <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-200/70 dark:bg-zinc-800/70 text-xs font-medium">
+            {(
+              [
+                { id: "all", label: "Semua" },
+                { id: "menu", label: "Menu Navigasi" },
+                { id: "action", label: "Aksi Cepat" },
+                { id: "task", label: "Pekerjaan" },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveCategory(tab.id)}
+                className={`px-3 py-1 rounded-lg text-xs transition-all cursor-pointer ${
+                  activeCategory === tab.id
+                    ? "bg-white text-slate-900 shadow-xs font-semibold dark:bg-zinc-900 dark:text-white"
+                    : "text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <span className="hidden sm:inline-block text-[11px] font-medium text-slate-400 dark:text-zinc-500">
+            {flatItems.length} hasil
           </span>
-          {(
-            [
-              { id: "all", label: "Semua" },
-              { id: "menu", label: "Menu Navigasi" },
-              { id: "action", label: "Aksi Cepat" },
-              { id: "task", label: "Pekerjaan" },
-            ] as const
-          ).map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveCategory(tab.id)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer ${
-                activeCategory === tab.id
-                  ? "bg-blue-600 text-white shadow-2xs font-semibold"
-                  : "text-slate-600 hover:bg-slate-200/60 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
         </div>
 
         {/* Results List Viewport */}

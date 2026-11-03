@@ -228,20 +228,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Quick Search Shortcut */}
-        {!isCollapsed && (
+        {!isCollapsed ? (
           <div className="px-3 pt-3">
             <button
               type="button"
               onClick={onQuickSearchClick}
-              className="flex w-full items-center justify-between rounded-lg bg-white/5 px-3 py-2 text-xs text-[#9fb0c9] hover:bg-white/10 hover:text-white transition-colors border border-white/5 active:scale-[0.98]"
+              className="group flex w-full items-center justify-between rounded-xl bg-white/5 px-3 py-2 text-xs text-[#9fb0c9] hover:bg-white/10 hover:text-white transition-all border border-white/5 active:scale-[0.98] cursor-pointer"
             >
-              <div className="flex items-center gap-2">
-                <Search className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-2.5">
+                <Search className="h-3.5 w-3.5 text-[#8192ad] group-hover:text-blue-400 transition-colors" />
                 <span>Cari menu atau tugas...</span>
               </div>
-              <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-mono text-[#dce5f4]">
+              <kbd className="rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-mono text-[#dce5f4] border border-white/5">
                 Ctrl K
               </kbd>
+            </button>
+          </div>
+        ) : (
+          <div className="px-2.5 pt-3">
+            <button
+              type="button"
+              onClick={onQuickSearchClick}
+              className="flex h-10 w-10 mx-auto items-center justify-center rounded-xl bg-white/5 text-[#9fb0c9] hover:bg-white/10 hover:text-white transition-all border border-white/5 cursor-pointer"
+              title="Cari menu atau tugas (Ctrl+K)"
+            >
+              <Search className="h-4 w-4" />
             </button>
           </div>
         )}
