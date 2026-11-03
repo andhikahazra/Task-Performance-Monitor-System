@@ -1,0 +1,57 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: mm-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: mm_root_password
+      MYSQL_DATABASE: management_monitor
+      MYSQL_USER: mm_user
+      MYSQL_PASSWORD: mm_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -pmm_root_password || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks:
+      - mm-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mm-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: "0.0.0.0"
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: mm_user
+      DB_PASSWORD: mm_password
+      DB_NAME: management_monitor
+      JWT_SECRET: mm-super-secret-production-jwt-key-32-chars-minimum
+      NEXT_PUBLIC_APP_NAME: "Management Monitor"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - mm-network
+
+volumes:
+  mysql_data:
+    name: mm_mysql_data
+
+networks:
+  mm-network:
+    name: mm_network
+    driver: bridge
