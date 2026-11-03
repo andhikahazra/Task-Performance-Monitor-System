@@ -874,6 +874,11 @@ function MainAppContent({ initialView }: { initialView?: ActiveViewType }) {
       onNotificationsClick={() => setActiveView("notifications")}
       onLogout={handleLogout}
       activePath={`/${activeView}`}
+      onNavigate={(path) => {
+        const clean = path.replace(/^\//, "") as ActiveViewType;
+        setActiveView(clean);
+        window.history.pushState(null, "", path);
+      }}
     >
       {/* View Component Switcher */}
       {activeView === "dashboard" && (

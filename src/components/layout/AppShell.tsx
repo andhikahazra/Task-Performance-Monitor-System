@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Topbar, { BreadcrumbItem } from "./Topbar";
-import ToastProvider from "../ui/Toast";
+import QuickSearchModal from "./QuickSearchModal";
 
 export interface AppShellProps {
   children: React.ReactNode;
@@ -20,6 +20,7 @@ export interface AppShellProps {
   onLogout?: () => void;
   activePath?: string;
   pendingActionsCount?: number;
+  onNavigate?: (path: string) => void;
 }
 
 export const AppShell: React.FC<AppShellProps> = ({
@@ -32,9 +33,11 @@ export const AppShell: React.FC<AppShellProps> = ({
   onLogout,
   activePath,
   pendingActionsCount,
+  onNavigate,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [isOpenMobile, setIsOpenMobile] = useState<boolean>(false);
+  const [isQuickSearchOpen, setIsQuickSearchOpen] = useState<boolean>(false);
 
   // Restore sidebar collapsed preference from localStorage
   useEffect(() => {
@@ -46,6 +49,18 @@ export const AppShell: React.FC<AppShellProps> = ({
     } catch {
       // Ignore
     }
+  }, []);
+
+  // Global Ctrl + K / Cmd + K shortcut listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setIsQuickSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const handleToggleCollapse = () => {
@@ -72,6 +87,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         user={user}
         activePath={activePath}
         pendingActionsCount={pendingActionsCount}
+        onQuickSearchClick={() => setIsQuickSearchOpen(true)}
       />
 
       {/* Main Area */}
@@ -91,6 +107,14 @@ export const AppShell: React.FC<AppShellProps> = ({
           {children}
         </main>
       </div>
+
+      {/* Quick Search Command Palette Modal (Ctrl + K) */}
+      <QuickSearchModal
+        isOpen={isQuickSearchOpen}
+        onClose={() => setIsQuickSearchOpen(false)}
+        role={role}
+        onNavigate={onNavigate}
+      />
     </div>
   );
 };
