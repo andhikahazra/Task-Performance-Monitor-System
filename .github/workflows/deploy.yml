@@ -1,0 +1,24 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Self-Hosted VM
+    runs-on: self-hosted
+    steps:
+      - name: Deploy and rebuild containers
+        run: |
+          echo "🚀 Starting automated deployment..."
+          cd /home/rfrvmuser1/Task-Performance-Monitor-System
+          git fetch origin main
+          git reset --hard origin/main
+          docker compose up -d --build --remove-orphans
+          docker image prune -f
+          echo "✅ Containers status:"
+          docker compose ps
+          echo "🎉 Deployment completed successfully!"
