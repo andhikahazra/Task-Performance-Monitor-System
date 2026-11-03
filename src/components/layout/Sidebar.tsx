@@ -163,9 +163,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
         } ${isCollapsed ? "w-16" : "w-[260px]"}`}
       >
         {/* Brand Header */}
-        <div className="flex h-16 items-center justify-between px-3 border-b border-white/10">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 font-extrabold text-white shadow-md shadow-blue-500/30 text-sm">
+        <div
+          className={`relative flex h-16 items-center border-b border-white/10 transition-all ${
+            isCollapsed ? "justify-center px-2" : "justify-between px-3.5"
+          }`}
+        >
+          <div
+            className={`flex items-center gap-2.5 min-w-0 ${
+              isCollapsed ? "cursor-pointer" : ""
+            }`}
+            onClick={isCollapsed ? onToggleCollapse : undefined}
+            title={isCollapsed ? "Management Monitor - Klik untuk membuka bilah samping" : undefined}
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 font-extrabold text-white shadow-md shadow-blue-500/30 text-sm hover:opacity-95 transition-transform active:scale-95">
               M
             </div>
             {!isCollapsed && (
@@ -180,20 +190,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
 
-          {/* Desktop Collapse Toggle */}
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            className="hidden lg:flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
-            aria-label={isCollapsed ? "Buka bilah samping" : "Ciutkan bilah samping"}
-            title={isCollapsed ? "Buka bilah samping" : "Ciutkan bilah samping"}
-          >
-            {isCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
+          {/* Desktop Collapse Toggle (When Expanded: Inside Header) */}
+          {!isCollapsed && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="hidden lg:flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+              aria-label="Ciutkan bilah samping"
+              title="Ciutkan bilah samping"
+            >
               <ChevronLeft className="h-4 w-4" />
-            )}
-          </button>
+            </button>
+          )}
+
+          {/* Desktop Expand Toggle (When Collapsed: Floating neatly on the Right Border) */}
+          {isCollapsed && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 z-50 h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-[var(--navy,#17243a)] text-slate-300 shadow-md hover:bg-blue-600 hover:text-white hover:border-blue-500 hover:scale-110 active:scale-95 transition-all cursor-pointer"
+              aria-label="Buka bilah samping"
+              title="Buka bilah samping"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          )}
 
           {/* Mobile Close Button */}
           <button
@@ -255,7 +276,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       isActive
                         ? "bg-blue-600 text-white shadow-sm font-semibold"
                         : "text-[#c0cce0] hover:bg-white/8 hover:text-white"
-                    } ${isCollapsed ? "justify-center px-0" : ""}`}
+                    } ${isCollapsed ? "justify-center p-0 h-10 w-10 mx-auto" : ""}`}
                   >
                     <span
                       className={`transition-colors ${
@@ -308,7 +329,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         isActive
                           ? "bg-blue-600 text-white shadow-sm font-semibold"
                           : "text-[#c0cce0] hover:bg-white/8 hover:text-white"
-                      } ${isCollapsed ? "justify-center px-0" : ""}`}
+                      } ${isCollapsed ? "justify-center p-0 h-10 w-10 mx-auto" : ""}`}
                     >
                       <span
                         className={`transition-colors ${
@@ -339,7 +360,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="border-t border-white/10 p-3">
           <div
             className={`flex items-center gap-2.5 rounded-lg p-1.5 transition-colors ${
-              isCollapsed ? "justify-center" : ""
+              isCollapsed ? "justify-center p-0" : ""
             }`}
           >
             <div
