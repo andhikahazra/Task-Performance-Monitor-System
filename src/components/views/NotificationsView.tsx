@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Bell,
   CheckCheck,
@@ -15,6 +15,7 @@ import { Notification, SafeUser } from "@/types/database";
 import { Button } from "@/components/ui/Button";
 import { PanelCard } from "@/components/ui/PanelCard";
 import { Select } from "@/components/ui/Select";
+import { Pagination } from "@/components/ui/Pagination";
 import { useToast } from "@/components/ui/Toast";
 
 export interface NotificationsViewProps {
@@ -59,6 +60,22 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
   useEffect(() => {
     loadNotifications();
   }, [loadNotifications]);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterLevel]);
+
+  const totalNotifs = notifications.length;
+  const totalPages = Math.ceil(totalNotifs / pageSize) || 1;
+
+  const paginatedNotifications = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return notifications.slice(start, start + pageSize);
+  }, [notifications, currentPage, pageSize]);
 
   const handleMarkAllRead = async () => {
     setIsMarkingAll(true);
@@ -174,8 +191,9 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
             Tidak ada notifikasi pada filter ini.
           </div>
         ) : (
-          <div className="space-y-3">
-            {notifications.map((item) => {
+          <>
+            <div className="space-y-3">
+              {paginatedNotifications.map((item) => {
               const isUnread = !item.is_read;
 
               return (
@@ -273,7 +291,20 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
               );
             })}
           </div>
-        )}
+
+          {/* Pagination Bar */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalNotifs}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={[10, 20, 50]}
+            className="mt-4"
+          />
+        </>
+      )}
       </PanelCard>
     </div>
   );

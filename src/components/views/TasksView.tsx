@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { FormField } from "@/components/ui/FormField";
+import { Pagination } from "@/components/ui/Pagination";
 import { useToast } from "@/components/ui/Toast";
 
 export interface TasksViewProps {
@@ -346,6 +347,23 @@ export const TasksView: React.FC<TasksViewProps> = ({
     });
   }, [tasks, statusFilter, priorityFilter, search]);
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+
+  // Reset to first page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, priorityFilter]);
+
+  const totalTasks = filteredTasks.length;
+  const totalPages = Math.ceil(totalTasks / pageSize) || 1;
+
+  const paginatedTasks = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredTasks.slice(start, start + pageSize);
+  }, [filteredTasks, currentPage, pageSize]);
+
   // Nested comments tree grouping (top-level vs replies)
   const nestedComments = useMemo(() => {
     const rootComments = comments.filter((c) => !c.parent_id);
@@ -496,7 +514,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredTasks.map((task) => (
+                  paginatedTasks.map((task) => (
                     <tr
                       key={task.id}
                       className="hover:bg-blue-50/40 dark:hover:bg-zinc-800/30 transition-colors"
@@ -574,7 +592,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {filteredTasks.map((task) => {
+                {paginatedTasks.map((task) => {
                   const ownerInitials = task.owner_name?.slice(0, 2).toUpperCase() || "ST";
                   const deadlineDate = new Date(task.deadline);
                   const formattedDeadline = !isNaN(deadlineDate.getTime())
@@ -681,13 +699,17 @@ export const TasksView: React.FC<TasksViewProps> = ({
           </div>
         )}
 
-        {/* Footer info */}
-        <div className="mt-4 flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
-          <div>
-            Menampilkan <span className="font-semibold">{filteredTasks.length}</span>{" "}
-            dari <span className="font-semibold">{tasks.length}</span> pekerjaan
-          </div>
-        </div>
+        {/* Pagination Bar */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalTasks}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          pageSizeOptions={[10, 20, 50]}
+          className="mt-4"
+        />
       </PanelCard>
 
       {/* 1. Modal Buat Pekerjaan */}

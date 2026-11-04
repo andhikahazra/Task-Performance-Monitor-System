@@ -19,6 +19,7 @@ import { PanelCard } from "@/components/ui/PanelCard";
 import { Select } from "@/components/ui/Select";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { PriorityBadge } from "@/components/ui/PriorityBadge";
+import { Pagination } from "@/components/ui/Pagination";
 import { useToast } from "@/components/ui/Toast";
 
 export interface ReportsViewProps {
@@ -141,6 +142,22 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         );
       });
   }, [reportData, drillDownStatus, drillSearch]);
+
+  // Drilldown Pagination
+  const [drillPage, setDrillPage] = useState<number>(1);
+  const drillPageSize = 10;
+
+  useEffect(() => {
+    setDrillPage(1);
+  }, [drillDownStatus, drillSearch]);
+
+  const totalDrillTasks = drillDownTasks.length;
+  const totalDrillPages = Math.ceil(totalDrillTasks / drillPageSize) || 1;
+
+  const paginatedDrillTasks = useMemo(() => {
+    const start = (drillPage - 1) * drillPageSize;
+    return drillDownTasks.slice(start, start + drillPageSize);
+  }, [drillDownTasks, drillPage, drillPageSize]);
 
   return (
     <div className="space-y-6">
@@ -346,7 +363,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  drillDownTasks.map((task) => (
+                  paginatedDrillTasks.map((task) => (
                     <tr
                       key={task.id}
                       className="hover:bg-blue-50/30 dark:hover:bg-zinc-800/30 transition-colors"
@@ -390,6 +407,16 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
               </tbody>
             </table>
           </div>
+
+          {/* Drilldown Pagination */}
+          <Pagination
+            currentPage={drillPage}
+            totalPages={totalDrillPages}
+            totalItems={totalDrillTasks}
+            pageSize={drillPageSize}
+            onPageChange={setDrillPage}
+            className="mt-4"
+          />
         </PanelCard>
       )}
     </div>

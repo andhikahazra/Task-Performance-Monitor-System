@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Modal } from "@/components/ui/Modal";
 import { FormField } from "@/components/ui/FormField";
+import { Pagination } from "@/components/ui/Pagination";
 import { useToast } from "@/components/ui/Toast";
 
 export interface UsersViewProps {
@@ -177,6 +178,23 @@ export const UsersView: React.FC<UsersViewProps> = ({ currentUser }) => {
     });
   }, [users, roleFilter, statusFilter, search]);
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+
+  // Reset to first page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [roleFilter, statusFilter, search]);
+
+  const totalUsers = filteredUsers.length;
+  const totalPages = Math.ceil(totalUsers / pageSize) || 1;
+
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredUsers.slice(start, start + pageSize);
+  }, [filteredUsers, currentPage, pageSize]);
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -268,7 +286,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ currentUser }) => {
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((u) => {
+                paginatedUsers.map((u) => {
                   const isProcessing = actionId === u.id;
                   const isSelf = u.id === currentUser.id;
 
@@ -396,6 +414,18 @@ export const UsersView: React.FC<UsersViewProps> = ({ currentUser }) => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalUsers}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          pageSizeOptions={[10, 20, 50]}
+          className="mt-4"
+        />
       </PanelCard>
 
       {/* Invite / Add User Modal */}

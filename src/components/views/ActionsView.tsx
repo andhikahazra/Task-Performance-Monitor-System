@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Clock,
   CheckCircle2,
@@ -9,12 +9,14 @@ import {
   ExternalLink,
   ShieldCheck,
   Info,
+  AlertTriangle,
 } from "lucide-react";
 import { Action, SafeUser } from "@/types/database";
 import { Button } from "@/components/ui/Button";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { PanelCard } from "@/components/ui/PanelCard";
 import { Select } from "@/components/ui/Select";
+import { Pagination } from "@/components/ui/Pagination";
 import { useToast } from "@/components/ui/Toast";
 
 export interface ActionsViewProps {
@@ -57,6 +59,22 @@ export const ActionsView: React.FC<ActionsViewProps> = ({
   useEffect(() => {
     loadActions();
   }, [loadActions]);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter]);
+
+  const totalActions = actions.length;
+  const totalPages = Math.ceil(totalActions / pageSize) || 1;
+
+  const paginatedActions = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return actions.slice(start, start + pageSize);
+  }, [actions, currentPage, pageSize]);
 
   const handleDecision = async (
     actionId: number,
@@ -164,126 +182,140 @@ export const ActionsView: React.FC<ActionsViewProps> = ({
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {actions.map((act) => {
-              const isPending = act.status === "pending";
-              const isProcessing = processingId === act.id;
+          <>
+            <div className="space-y-4">
+              {paginatedActions.map((act) => {
+                const isPending = act.status === "pending";
+                const isProcessing = processingId === act.id;
 
-              return (
-                <div
-                  key={act.id}
-                  className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs transition-colors dark:border-zinc-800 dark:bg-zinc-950"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
-                          act.level === "Kritis"
-                            ? "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-800/40"
-                            : act.level === "Penting"
-                            ? "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-800/40"
-                            : "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-800/40"
-                        }`}
-                      >
-                        {act.level === "Kritis" ? "!" : <Clock className="h-4 w-4" />}
-                      </div>
+                return (
+                  <div
+                    key={act.id}
+                    className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs transition-colors dark:border-zinc-800 dark:bg-zinc-950"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+                            act.level === "Kritis"
+                              ? "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-800/40"
+                              : act.level === "Penting"
+                              ? "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-800/40"
+                              : "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-800/40"
+                          }`}
+                        >
+                          {act.level === "Kritis" ? <AlertTriangle className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                        </div>
 
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
-                            {act.title}
-                          </h3>
-                          <StatusPill
-                            status={
-                              act.status === "pending"
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
+                              {act.title}
+                            </h3>
+                            <StatusPill
+                              status={
+                                act.status === "pending"
+                                  ? "Menunggu"
+                                  : act.status === "approved"
+                                  ? "Disetujui"
+                                  : "Ditolak"
+                              }
+                            >
+                              {act.status === "pending"
                                 ? "Menunggu"
                                 : act.status === "approved"
                                 ? "Disetujui"
-                                : "Ditolak"
-                            }
-                          >
-                            {act.status === "pending"
-                              ? "Menunggu"
-                              : act.status === "approved"
-                              ? "Disetujui"
-                              : "Ditolak"}
-                          </StatusPill>
-                        </div>
+                                : "Ditolak"}
+                            </StatusPill>
+                          </div>
 
-                        <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
-                          {act.body}
-                        </p>
+                          <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
+                            {act.body}
+                          </p>
 
-                        <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 dark:text-zinc-500 pt-1">
-                          <span>
-                            Pemohon: <strong>{act.user_name || "Pengguna"}</strong> (
-                            {act.user_email || "-"})
-                          </span>
-                          <span>•</span>
-                          <span>
-                            {new Date(act.created_at).toLocaleDateString("id-ID", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                          {act.task_id && (
-                            <>
-                              <span>•</span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  onOpenTaskDetail && onOpenTaskDetail(act.task_id!)
-                                }
-                                className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-0.5 font-medium cursor-pointer active:scale-[0.98]"
-                              >
-                                {act.task_code || "Tugas"}: {act.task_title}{" "}
-                                <ExternalLink className="h-3 w-3" />
-                              </button>
-                            </>
+                          <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 dark:text-zinc-500 pt-1">
+                            <span>
+                              Pemohon: <strong>{act.user_name || "Pengguna"}</strong> (
+                              {act.user_email || "-"})
+                            </span>
+                            <span>•</span>
+                            <span>
+                              {new Date(act.created_at).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                            {act.task_id && (
+                              <>
+                                <span>•</span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    onOpenTaskDetail && onOpenTaskDetail(act.task_id!)
+                                  }
+                                  className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-0.5 font-medium cursor-pointer active:scale-[0.98]"
+                                >
+                                  {act.task_code || "Tugas"}: {act.task_title}{" "}
+                                  <ExternalLink className="h-3 w-3" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+
+                          {act.decision_notes && (
+                            <div className="mt-2 text-[11px] italic text-slate-500 dark:text-zinc-400">
+                              Catatan keputusan: "{act.decision_notes}"
+                            </div>
                           )}
                         </div>
-
-                        {act.decision_notes && (
-                          <div className="mt-2 text-[11px] italic text-slate-500 dark:text-zinc-400">
-                            Catatan keputusan: "{act.decision_notes}"
-                          </div>
-                        )}
                       </div>
+
+                      {/* Action buttons (only if pending) */}
+                      {isPending && user.role === "admin" && (
+                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isProcessing}
+                            onClick={() => handleDecision(act.id, "reject")}
+                            className="text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 border-rose-200 active:scale-[0.98]"
+                            leftIcon={<XCircle className="h-3.5 w-3.5" />}
+                          >
+                            Tolak
+                          </Button>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            isLoading={isProcessing}
+                            onClick={() => handleDecision(act.id, "approve")}
+                            className="active:scale-[0.98]"
+                            leftIcon={<CheckCircle2 className="h-3.5 w-3.5" />}
+                          >
+                            Setujui
+                          </Button>
+                        </div>
+                      )}
                     </div>
-
-                    {/* Action buttons (only if pending) */}
-                    {isPending && user.role === "admin" && (
-                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={isProcessing}
-                          onClick={() => handleDecision(act.id, "reject")}
-                          className="text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 border-rose-200 active:scale-[0.98]"
-                          leftIcon={<XCircle className="h-3.5 w-3.5" />}
-                        >
-                          Tolak
-                        </Button>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          isLoading={isProcessing}
-                          onClick={() => handleDecision(act.id, "approve")}
-                          className="active:scale-[0.98]"
-                          leftIcon={<CheckCircle2 className="h-3.5 w-3.5" />}
-                        >
-                          Setujui
-                        </Button>
-                      </div>
-                    )}
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+
+            {/* Pagination Bar */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalActions}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              pageSizeOptions={[10, 20, 50]}
+              className="mt-4"
+            />
+          </>
         )}
       </PanelCard>
     </div>
