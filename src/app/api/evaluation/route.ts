@@ -216,14 +216,14 @@ export async function GET(request: Request) {
       const low = validScores[validScores.length - 1];
 
       insights.push({
-        icon: '↗',
+        icon: 'trending',
         title: 'Skor tertinggi',
         description: `${best.userName} memperoleh skor ${best.score} dari 100 (${best.category}).`,
       });
 
       if (low.userId !== best.userId) {
         insights.push({
-          icon: '!',
+          icon: 'alert',
           title: 'Prioritas pembinaan',
           description: `${low.userName} memperoleh skor ${low.score} (${low.category}). Periksa pekerjaan terlambat dan kendala operasional.`,
         });
@@ -232,20 +232,20 @@ export async function GET(request: Request) {
 
     if (sumDue === 0) {
       insights.push({
-        icon: 'i',
+        icon: 'info',
         title: 'Belum ada data jatuh tempo',
         description: 'Tidak ada pekerjaan yang jatuh tempo pada periode ini sehingga skor tidak dapat dihitung.',
       });
     } else {
       insights.push({
-        icon: '✓',
+        icon: 'check',
         title: 'Cakupan penilaian',
         description: `${sumDone} dari ${sumDue} pekerjaan jatuh tempo telah berstatus Selesai (${overallCompletionRate}%).`,
       });
     }
 
     insights.push({
-      icon: '◷',
+      icon: 'clock',
       title: 'Pekerjaan perlu perhatian',
       description: `${totalAttention} pekerjaan memerlukan perhatian segera karena berstatus Terlambat atau tertunda.`,
     });

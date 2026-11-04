@@ -9,6 +9,7 @@ import {
   Clock,
   AlertTriangle,
   ClipboardCheck,
+  Info,
 } from "lucide-react";
 import { SafeUser, EvaluationResponse, UserEvaluationResult } from "@/types/database";
 import { Button } from "@/components/ui/Button";
@@ -522,24 +523,45 @@ export const EvaluationView: React.FC<EvaluationViewProps> = ({ user }) => {
           subtitle="Rekomendasi tindak lanjut manajerial"
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            {data.insights.map((ins, idx) => (
-              <div
-                key={idx}
-                className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-950"
-              >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 font-bold dark:bg-blue-900/30 dark:text-blue-400">
-                  {ins.icon}
+            {data.insights.map((ins, idx) => {
+              const renderIcon = (iconName: string) => {
+                switch (iconName) {
+                  case "trending":
+                  case "↗":
+                    return <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />;
+                  case "alert":
+                  case "!":
+                    return <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />;
+                  case "check":
+                  case "✓":
+                    return <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />;
+                  case "clock":
+                  case "◷":
+                    return <Clock className="h-4 w-4 text-rose-600 dark:text-rose-400" />;
+                  default:
+                    return <Info className="h-4 w-4 text-slate-600 dark:text-zinc-400" />;
+                }
+              };
+
+              return (
+                <div
+                  key={idx}
+                  className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-950"
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800">
+                    {renderIcon(ins.icon)}
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-zinc-100">
+                      {ins.title}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                      {ins.description}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-zinc-100">
-                    {ins.title}
-                  </h4>
-                  <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
-                    {ins.description}
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </PanelCard>
       )}

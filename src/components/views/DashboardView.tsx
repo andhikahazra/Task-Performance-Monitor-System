@@ -41,6 +41,31 @@ interface TrendPoint {
   yCreated: number;
 }
 
+interface DashboardActivity {
+  id: string | number;
+  user: string;
+  action: string;
+  target?: string;
+  task: string;
+  time: string;
+}
+
+const formatRelativeTime = (val: string | Date | null | undefined): string => {
+  if (!val) return "Baru saja";
+  const d = new Date(typeof val === "string" ? val.replace(" ", "T") : val);
+  if (isNaN(d.getTime())) return "Baru saja";
+  const diffMs = Date.now() - d.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  if (diffMins < 1) return "Baru saja";
+  if (diffMins < 60) return `${diffMins} mnt lalu`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours} jam lalu`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return "Kemarin";
+  if (diffDays < 7) return `${diffDays} hari lalu`;
+  return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+};
+
 export const DashboardView: React.FC<DashboardViewProps> = ({
   user,
   onOpenCreateTask,
@@ -51,6 +76,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activeUsersCount, setActiveUsersCount] = useState<number>(0);
   const [totalUsersCount, setTotalUsersCount] = useState<number>(0);
+  const [activities, setActivities] = useState<DashboardActivity[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [recentFilter, setRecentFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -74,15 +100,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     async function loadData() {
       setIsLoading(true);
       try {
-        const [tasksRes, usersRes] = await Promise.all([
+        const [tasksRes, usersRes, notifsRes] = await Promise.all([
           fetch("/api/tasks?include_demo=false"),
           fetch("/api/users"),
+          fetch("/api/notifications?filter=all"),
         ]);
 
+        let loadedTasks: Task[] = [];
         if (tasksRes.ok) {
           const tasksData = await tasksRes.json();
           if (tasksData.success && isMounted) {
-            setTasks(tasksData.data || []);
+            loadedTasks = tasksData.data || [];
+            setTasks(loadedTasks);
           }
         }
 
@@ -96,6 +125,44 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             ).length;
             setActiveUsersCount(active);
           }
+        }
+
+        // Process dynamic real activities
+        if (isMounted) {
+          let dynamicActs: DashboardActivity[] = [];
+
+          if (notifsRes && notifsRes.ok) {
+            const notifsJson = await notifsRes.json();
+            if (notifsJson.success && Array.isArray(notifsJson.data?.notifications) && notifsJson.data.notifications.length > 0) {
+              dynamicActs = notifsJson.data.notifications.slice(0, 4).map((n: any) => ({
+                id: `notif-${n.id}`,
+                user: n.user_name || "Sistem",
+                action: n.title,
+                target: "",
+                task: n.body,
+                time: formatRelativeTime(n.created_at),
+              }));
+            }
+          }
+
+          if (dynamicActs.length === 0 && loadedTasks.length > 0) {
+            const sorted = [...loadedTasks].sort((a, b) => {
+              const timeA = new Date(a.updated_at || a.created_at).getTime();
+              const timeB = new Date(b.updated_at || b.created_at).getTime();
+              return timeB - timeA;
+            }).slice(0, 4);
+
+            dynamicActs = sorted.map((t) => ({
+              id: `task-${t.id}`,
+              user: t.owner_name || "Staf",
+              action: t.status === "Selesai" ? "telah menyelesaikan pekerjaan" : "memperbarui status menjadi",
+              target: t.status,
+              task: `${t.code} · ${t.title}`,
+              time: formatRelativeTime(t.updated_at || t.created_at),
+            }));
+          }
+
+          setActivities(dynamicActs);
         }
       } catch (err) {
         console.error("Error loading dashboard data:", err);
@@ -955,65 +1022,38 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             }
           >
             <div className="space-y-3.5">
-              {[
-                {
-                  id: 1,
-                  user: "Budi Santoso",
-                  action: "memperbarui status menjadi",
-                  target: "Selesai",
-                  task: "MM-1024 · Rekapitulasi Laporan Finansial",
-                  time: "10 menit yang lalu",
-                  statusType: "Selesai",
-                },
-                {
-                  id: 2,
-                  user: "Siti Rahma",
-                  action: "mengajukan status",
-                  target: "Pending",
-                  task: "MM-1025 · Integrasi Payment Gateway API",
-                  time: "32 menit yang lalu",
-                  statusType: "Pending",
-                },
-                {
-                  id: 3,
-                  user: "Ahmad Fauzi",
-                  action: "menambahkan komentar pada",
-                  target: "Diskusi",
-                  task: "MM-1021 · Audit Log Keamanan Q3",
-                  time: "1 jam yang lalu",
-                },
-                {
-                  id: 4,
-                  user: "Super Admin",
-                  action: "menyetujui pendaftaran akun",
-                  target: "User Baru",
-                  task: "Dewi Lestari · Divisi HR",
-                  time: "3 jam yang lalu",
-                },
-              ].map((act) => (
-                <div key={act.id} className="flex items-start gap-2.5 text-xs">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-zinc-800 text-[10px] font-bold text-slate-700 dark:text-zinc-300">
-                    {act.user.substring(0, 2).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-slate-800 dark:text-zinc-200 leading-tight">
-                      <span className="font-semibold">{act.user}</span>{" "}
-                      <span className="text-slate-500 dark:text-zinc-400">
-                        {act.action}
-                      </span>{" "}
-                      <span className="font-medium text-blue-600 dark:text-blue-400">
-                        {act.target}
-                      </span>
-                    </p>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate mt-0.5">
-                      {act.task}
-                    </p>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      {act.time}
-                    </span>
-                  </div>
+              {activities.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-400 dark:text-zinc-500">
+                  Belum ada aktivitas terbaru di workspace.
                 </div>
-              ))}
+              ) : (
+                activities.map((act) => (
+                  <div key={act.id} className="flex items-start gap-2.5 text-xs">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-zinc-800 text-[10px] font-bold text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/50">
+                      {act.user.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-slate-800 dark:text-zinc-200 leading-tight">
+                        <span className="font-semibold">{act.user}</span>{" "}
+                        <span className="text-slate-500 dark:text-zinc-400">
+                          {act.action}
+                        </span>{" "}
+                        {act.target && (
+                          <span className="font-medium text-blue-600 dark:text-blue-400">
+                            {act.target}
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate mt-0.5">
+                        {act.task}
+                      </p>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {act.time}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </PanelCard>
         </div>

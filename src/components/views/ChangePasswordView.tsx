@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { KeyRound, Eye, EyeOff, ShieldCheck, Lock } from "lucide-react";
+import { KeyRound, Eye, EyeOff, ShieldCheck, Lock, CheckCircle2 } from "lucide-react";
 import { SafeUser } from "@/types/database";
 import { Button } from "@/components/ui/Button";
 import { PanelCard } from "@/components/ui/PanelCard";
@@ -199,19 +199,19 @@ export const ChangePasswordView: React.FC<ChangePasswordViewProps> = ({
           >
             <ul className="space-y-3 text-xs text-slate-600 dark:text-zinc-400">
               <li className="flex items-start gap-2">
-                <span className="text-emerald-500 font-bold">✓</span>
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
                 <span>Minimal terdiri dari 6 karakter (disarankan 8+ karakter).</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-emerald-500 font-bold">✓</span>
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
                 <span>Gunakan campuran huruf besar, huruf kecil, dan angka.</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-emerald-500 font-bold">✓</span>
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
                 <span>Hindari menggunakan nama lengkap, tanggal lahir, atau kata umum.</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-emerald-500 font-bold">✓</span>
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
                 <span>Jangan membagikan kata sandi akun Anda kepada siapapun.</span>
               </li>
             </ul>

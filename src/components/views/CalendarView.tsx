@@ -14,6 +14,7 @@ import {
 import { Task, SafeUser } from "@/types/database";
 import { Button } from "@/components/ui/Button";
 import { StatusPill } from "@/components/ui/StatusPill";
+import { PriorityBadge } from "@/components/ui/PriorityBadge";
 import { PanelCard } from "@/components/ui/PanelCard";
 import { Select } from "@/components/ui/Select";
 
@@ -506,12 +507,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">
                         {task.title}
                       </div>
-                      <div className="text-[11px] text-slate-500 dark:text-zinc-400 flex items-center gap-2 mt-0.5">
-                        <span className="font-mono">{task.code}</span>
+                      <div className="text-[11px] text-slate-500 dark:text-zinc-400 flex items-center gap-2 mt-1">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400 border border-slate-200/80 dark:border-zinc-700/60">
+                          {task.code}
+                        </span>
                         <span>•</span>
                         <span>{task.owner_name || "Staf"}</span>
                         <span>•</span>
-                        <span>Prioritas: {task.priority}</span>
+                        <PriorityBadge priority={task.priority} />
                       </div>
                     </div>
                   </div>

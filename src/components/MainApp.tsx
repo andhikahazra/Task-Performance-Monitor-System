@@ -42,6 +42,7 @@ import {
   Send,
   X,
   Plus,
+  CheckCircle2,
 } from "lucide-react";
 
 type ActiveViewType =
@@ -1014,8 +1015,9 @@ function MainAppContent({ initialView, initialUser }: MainAppProps) {
                     }
                   />
                 </FormField>
-                <p className="text-[11px] text-emerald-800 dark:text-emerald-300">
-                  ✓ Pekerjaan tidak dapat diselesaikan tanpa melampirkan tautan bukti.
+                <p className="text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Pekerjaan tidak dapat diselesaikan tanpa melampirkan tautan bukti.</span>
                 </p>
               </div>
             )}
