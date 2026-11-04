@@ -25,11 +25,77 @@ export interface EvaluationViewProps {
 export const EvaluationView: React.FC<EvaluationViewProps> = ({ user }) => {
   const { error, success } = useToast();
   const [periodMode, setPeriodMode] = useState<"month" | "week">("month");
-  const [dateParam, setDateParam] = useState<string>("2026-10");
+  const [dateParam, setDateParam] = useState<string>(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
   const [selectedUserId, setSelectedUserId] = useState<string>("all");
   const [data, setData] = useState<EvaluationResponse | null>(null);
   const [usersList, setUsersList] = useState<SafeUser[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Dynamic Month Options (Current month + past 11 months)
+  const monthOptions = useMemo(() => {
+    const options: { label: string; value: string }[] = [];
+    const now = new Date();
+    const monthNames = [
+      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+      "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+    ];
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      options.push({
+        label: `${monthNames[d.getMonth()]} ${y}`,
+        value: `${y}-${m}`,
+      });
+    }
+    return options;
+  }, []);
+
+  // Dynamic Week Options (Current week + past 7 weeks)
+  const weekOptions = useMemo(() => {
+    const options: { label: string; value: string }[] = [];
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const currentMonday = new Date(now);
+    currentMonday.setDate(now.getDate() + diffToMonday);
+    currentMonday.setHours(0, 0, 0, 0);
+
+    const monthNamesShort = [
+      "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+      "Jul", "Agu", "Sep", "Okt", "Nov", "Des",
+    ];
+
+    for (let i = 0; i < 8; i++) {
+      const mon = new Date(currentMonday);
+      mon.setDate(currentMonday.getDate() - i * 7);
+
+      const sun = new Date(mon);
+      sun.setDate(mon.getDate() + 6);
+
+      const monDay = String(mon.getDate()).padStart(2, "0");
+      const sunDay = String(sun.getDate()).padStart(2, "0");
+      const monM = monthNamesShort[mon.getMonth()];
+      const sunM = monthNamesShort[sun.getMonth()];
+      const y = sun.getFullYear();
+
+      const valY = mon.getFullYear();
+      const valM = String(mon.getMonth() + 1).padStart(2, "0");
+      const valD = String(mon.getDate()).padStart(2, "0");
+      const val = `${valY}-${valM}-${valD}`;
+
+      const label =
+        mon.getMonth() === sun.getMonth()
+          ? `${monDay} – ${sunDay} ${sunM} ${y}`
+          : `${monDay} ${monM} – ${sunDay} ${sunM} ${y}`;
+
+      options.push({ label, value: val });
+    }
+    return options;
+  }, []);
 
   // Load users for user filter
   useEffect(() => {
@@ -180,7 +246,11 @@ export const EvaluationView: React.FC<EvaluationViewProps> = ({ user }) => {
               onChange={(e) => {
                 const mode = e.target.value as "month" | "week";
                 setPeriodMode(mode);
-                setDateParam(mode === "month" ? "2026-10" : "2026-10-19");
+                if (mode === "month") {
+                  setDateParam(monthOptions[0]?.value || "");
+                } else {
+                  setDateParam(weekOptions[0]?.value || "");
+                }
               }}
               options={[
                 { label: "Bulanan", value: "month" },
@@ -193,28 +263,11 @@ export const EvaluationView: React.FC<EvaluationViewProps> = ({ user }) => {
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-1.5">
               Rentang Tanggal
             </label>
-            {periodMode === "month" ? (
-              <Select
-                value={dateParam}
-                onChange={(e) => setDateParam(e.target.value)}
-                options={[
-                  { label: "Oktober 2026", value: "2026-10" },
-                  { label: "September 2026", value: "2026-09" },
-                  { label: "Agustus 2026", value: "2026-08" },
-                  { label: "Juli 2026", value: "2026-07" },
-                ]}
-              />
-            ) : (
-              <Select
-                value={dateParam}
-                onChange={(e) => setDateParam(e.target.value)}
-                options={[
-                  { label: "19 – 25 Okt 2026", value: "2026-10-19" },
-                  { label: "12 – 18 Okt 2026", value: "2026-10-12" },
-                  { label: "05 – 11 Okt 2026", value: "2026-10-05" },
-                ]}
-              />
-            )}
+            <Select
+              value={dateParam}
+              onChange={(e) => setDateParam(e.target.value)}
+              options={periodMode === "month" ? monthOptions : weekOptions}
+            />
           </div>
 
           <div>

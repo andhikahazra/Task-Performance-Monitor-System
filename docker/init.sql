@@ -48,7 +48,11 @@ CREATE TABLE IF NOT EXISTS tasks (
   INDEX idx_tasks_owner (owner_id),
   INDEX idx_tasks_status (status),
   INDEX idx_tasks_deadline (deadline),
-  INDEX idx_tasks_category (category)
+  INDEX idx_tasks_category (category),
+  INDEX idx_tasks_eval (is_demo_eval, deadline, owner_id, status),
+  INDEX idx_tasks_created (created_at),
+  INDEX idx_tasks_completed (completed_at),
+  INDEX idx_tasks_dashboard (is_demo_eval, status, deadline)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 3. Comments Table
@@ -64,7 +68,8 @@ CREATE TABLE IF NOT EXISTS comments (
   CONSTRAINT fk_comments_parent FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE SET NULL,
   INDEX idx_comments_task (task_id),
   INDEX idx_comments_user (user_id),
-  INDEX idx_comments_parent (parent_id)
+  INDEX idx_comments_parent (parent_id),
+  INDEX idx_comments_task_created (task_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 4. Actions Table (Super Admin approvals: pending requests, deadline changes, etc.)
@@ -84,7 +89,8 @@ CREATE TABLE IF NOT EXISTS actions (
   CONSTRAINT fk_actions_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE SET NULL,
   CONSTRAINT fk_actions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   INDEX idx_actions_status (status),
-  INDEX idx_actions_task (task_id)
+  INDEX idx_actions_task (task_id),
+  INDEX idx_actions_status_created (status, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 5. Notifications Table
@@ -100,7 +106,8 @@ CREATE TABLE IF NOT EXISTS notifications (
   CONSTRAINT fk_notif_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE SET NULL,
   INDEX idx_notif_user (user_id),
   INDEX idx_notif_read (is_read),
-  INDEX idx_notif_created (created_at)
+  INDEX idx_notif_created (created_at),
+  INDEX idx_notif_user_read_created (user_id, is_read, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 6. Settings Table
@@ -124,53 +131,54 @@ INSERT INTO users (id, full_name, email, password_hash, department, job_title, r
 (5, 'Sarah Amelia', 'sarah@example.com', '$2b$10$epypTKOr.jj3nfKOx3LnP.Euer2dLY.yyd.A08EjpkqQVdQzvD58.', 'Operasional', 'Spesialis', 'user', 'active', 'SA', NOW() - INTERVAL 2 HOUR)
 ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
 
-INSERT INTO tasks (id, code, title, description, category, priority, status, owner_id, deadline, started_at, completed_at, evidence_url, is_demo_eval) VALUES
-(1, 'MM-0001', 'Laporan mingguan operasional', 'Kompilasi dan validasi data operasional mingguan.', 'Operasional', 'Tinggi', 'Dalam Proses', 2, '2026-10-25 17:00:00', '2026-10-20 09:00:00', NULL, NULL, 0),
-(2, 'MM-0002', 'Persiapan dokumen proyek', 'Susun dokumen pendukung dan catat hambatan.', 'Proyek', 'Kritis', 'Terlambat', 4, '2026-10-24 12:00:00', '2026-10-21 10:00:00', NULL, NULL, 0),
-(3, 'MM-0003', 'Review dokumen administrasi', 'Pemeriksaan akhir dan konfirmasi data.', 'Administrasi', 'Menengah', 'Pending', 3, '2026-10-27 16:00:00', '2026-10-22 08:30:00', NULL, NULL, 0),
-(4, 'MM-0004', 'Pembaruan SOP internal', 'Perbarui dokumen sesuai proses terbaru.', 'Operasional', 'Menengah', 'Dalam Proses', 5, '2026-10-28 16:00:00', '2026-10-23 09:00:00', NULL, NULL, 0),
-(5, 'MM-0005', 'Rekap kebutuhan bulanan', 'Validasi kebutuhan dan siapkan ringkasan.', 'Administrasi', 'Rendah', 'Selesai', 2, '2026-10-22 15:00:00', '2026-10-20 08:00:00', '2026-10-22 14:30:00', 'https://drive.google.com/file/d/demo-rekap-bulanan', 0),
-(6, 'MM-0006', 'Evaluasi hasil kuartal', 'Rangkum hasil, kendala, dan tindak lanjut.', 'Proyek', 'Tinggi', 'Belum Mulai', 5, '2026-10-29 17:00:00', NULL, NULL, NULL, 0),
-(7, 'MM-0007', 'Verifikasi arsip dokumen', 'Pastikan arsip tersimpan dan dapat diakses.', 'Administrasi', 'Menengah', 'Selesai', 3, '2026-10-23 12:00:00', '2026-10-21 13:00:00', '2026-10-23 11:20:00', 'https://drive.google.com/file/d/demo-arsip-dokumen', 0),
-(8, 'MM-0008', 'Rencana kerja pekan depan', 'Susun prioritas dan dependensi pekerjaan.', 'Operasional', 'Rendah', 'Belum Mulai', 4, '2026-10-26 15:00:00', NULL, NULL, NULL, 0)
+INSERT INTO tasks (id, code, title, description, category, priority, status, owner_id, deadline, started_at, completed_at, evidence_url, is_demo_eval, created_at) VALUES
+(1, 'MM-0001', 'Laporan mingguan operasional', 'Kompilasi dan validasi data operasional mingguan.', 'Operasional', 'Tinggi', 'Dalam Proses', 2, NOW() + INTERVAL 2 DAY, NOW() - INTERVAL 1 DAY, NULL, NULL, 0, NOW() - INTERVAL 2 DAY),
+(2, 'MM-0002', 'Persiapan dokumen proyek', 'Susun dokumen pendukung dan catat hambatan.', 'Proyek', 'Kritis', 'Terlambat', 4, NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 3 DAY, NULL, NULL, 0, NOW() - INTERVAL 4 DAY),
+(3, 'MM-0003', 'Review dokumen administrasi', 'Pemeriksaan akhir dan konfirmasi data.', 'Administrasi', 'Menengah', 'Pending', 3, NOW() + INTERVAL 3 DAY, NOW() - INTERVAL 2 DAY, NULL, NULL, 0, NOW() - INTERVAL 3 DAY),
+(4, 'MM-0004', 'Pembaruan SOP internal', 'Perbarui dokumen sesuai proses terbaru.', 'Operasional', 'Menengah', 'Dalam Proses', 5, NOW() + INTERVAL 4 DAY, NOW() - INTERVAL 1 DAY, NULL, NULL, 0, NOW() - INTERVAL 2 DAY),
+(5, 'MM-0005', 'Rekap kebutuhan bulanan', 'Validasi kebutuhan dan siapkan ringkasan.', 'Administrasi', 'Rendah', 'Selesai', 2, NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 4 DAY, NOW() - INTERVAL 2 DAY, 'https://drive.google.com/file/d/demo-rekap-bulanan', 0, NOW() - INTERVAL 5 DAY),
+(6, 'MM-0006', 'Evaluasi hasil kuartal', 'Rangkum hasil, kendala, dan tindak lanjut.', 'Proyek', 'Tinggi', 'Belum Mulai', 5, NOW() + INTERVAL 5 DAY, NULL, NULL, NULL, 0, NOW() - INTERVAL 1 DAY),
+(7, 'MM-0007', 'Verifikasi arsip dokumen', 'Pastikan arsip tersimpan dan dapat diakses.', 'Administrasi', 'Menengah', 'Selesai', 3, NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 3 DAY, 'https://drive.google.com/file/d/demo-arsip-dokumen', 0, NOW() - INTERVAL 6 DAY),
+(8, 'MM-0008', 'Rencana kerja pekan depan', 'Susun prioritas dan dependensi pekerjaan.', 'Operasional', 'Rendah', 'Belum Mulai', 4, NOW() + INTERVAL 1 DAY, NULL, NULL, NULL, 0, NOW() - INTERVAL 1 DAY)
 ON DUPLICATE KEY UPDATE title=VALUES(title);
 
 -- Evaluation Demo Tasks for robust evaluation calculations
-INSERT INTO tasks (id, code, title, description, category, priority, status, owner_id, deadline, started_at, completed_at, is_demo_eval) VALUES
-(901, 'MM-0901', 'Rekap KPI mingguan', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 2, '2026-10-20 16:00:00', '2026-10-18 09:00:00', '2026-10-20 14:15:00', 1),
-(902, 'MM-0902', 'Audit kelengkapan laporan', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 2, '2026-10-21 16:00:00', '2026-10-19 09:00:00', '2026-10-21 15:10:00', 1),
-(903, 'MM-0903', 'Analisis penyimpangan target', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 2, '2026-10-22 15:00:00', '2026-10-20 09:00:00', '2026-10-22 17:30:00', 1),
-(904, 'MM-0904', 'Pembaruan dashboard operasional', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Dalam Proses', 2, '2026-10-23 16:00:00', '2026-10-21 09:00:00', NULL, 1),
-(905, 'MM-0905', 'Rencana tindak lanjut mingguan', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 2, '2026-10-24 12:00:00', '2026-10-22 09:00:00', '2026-10-24 11:30:00', 1),
-(906, 'MM-0906', 'Validasi data akhir pekan', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 2, '2026-10-25 15:00:00', '2026-10-23 09:00:00', '2026-10-25 14:00:00', 1),
+INSERT INTO tasks (id, code, title, description, category, priority, status, owner_id, deadline, started_at, completed_at, is_demo_eval, created_at) VALUES
+(901, 'MM-0901', 'Rekap KPI mingguan', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 2, NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 5 DAY, 1, NOW() - INTERVAL 8 DAY),
+(902, 'MM-0902', 'Audit kelengkapan laporan', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 2, NOW() - INTERVAL 4 DAY, NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 4 DAY, 1, NOW() - INTERVAL 7 DAY),
+(903, 'MM-0903', 'Analisis penyimpangan target', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 2, NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 3 DAY, 1, NOW() - INTERVAL 6 DAY),
+(904, 'MM-0904', 'Pembaruan dashboard operasional', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Dalam Proses', 2, NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 4 DAY, NULL, 1, NOW() - INTERVAL 5 DAY),
+(905, 'MM-0905', 'Rencana tindak lanjut mingguan', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 2, NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 1 DAY, 1, NOW() - INTERVAL 4 DAY),
+(906, 'MM-0906', 'Validasi data akhir pekan', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 2, NOW(), NOW() - INTERVAL 2 DAY, NOW(), 1, NOW() - INTERVAL 3 DAY),
 
-(907, 'MM-0907', 'Pemeriksaan dokumen vendor', 'Tugas evaluasi kinerja', 'Administrasi', 'Menengah', 'Selesai', 3, '2026-10-20 15:00:00', '2026-10-18 09:00:00', '2026-10-20 13:50:00', 1),
-(908, 'MM-0908', 'Rekonsiliasi data administrasi', 'Tugas evaluasi kinerja', 'Administrasi', 'Menengah', 'Selesai', 3, '2026-10-21 16:00:00', '2026-10-19 09:00:00', '2026-10-21 15:40:00', 1),
-(909, 'MM-0909', 'Pembaruan arsip kontrak', 'Tugas evaluasi kinerja', 'Administrasi', 'Menengah', 'Selesai', 3, '2026-10-22 16:00:00', '2026-10-20 09:00:00', '2026-10-22 16:40:00', 1),
-(910, 'MM-0910', 'Validasi formulir permintaan', 'Tugas evaluasi kinerja', 'Administrasi', 'Menengah', 'Selesai', 3, '2026-10-23 15:00:00', '2026-10-21 09:00:00', '2026-10-23 14:10:00', 1),
-(911, 'MM-0911', 'Penyusunan ringkasan dokumen', 'Tugas evaluasi kinerja', 'Administrasi', 'Menengah', 'Pending', 3, '2026-10-24 12:00:00', '2026-10-22 09:00:00', NULL, 1),
-(912, 'MM-0912', 'Finalisasi daftar arsip', 'Tugas evaluasi kinerja', 'Administrasi', 'Menengah', 'Selesai', 3, '2026-10-25 15:00:00', '2026-10-23 09:00:00', '2026-10-25 14:45:00', 1),
+(907, 'MM-0907', 'Pemeriksaan dokumen vendor', 'Tugas evaluasi kinerja', 'Administrasi', 'Menengah', 'Selesai', 3, NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 5 DAY, 1, NOW() - INTERVAL 8 DAY),
+(908, 'MM-0908', 'Rekonsiliasi data administrasi', 'Tugas evaluasi kinerja', 'Administrasi', 'Menengah', 'Selesai', 3, NOW() - INTERVAL 4 DAY, NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 4 DAY, 1, NOW() - INTERVAL 7 DAY),
+(909, 'MM-0909', 'Pembaruan arsip kontrak', 'Tugas evaluasi kinerja', 'Administrasi', 'Menengah', 'Selesai', 3, NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 3 DAY, 1, NOW() - INTERVAL 6 DAY),
+(910, 'MM-0910', 'Validasi formulir permintaan', 'Tugas evaluasi kinerja', 'Administrasi', 'Menengah', 'Selesai', 3, NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 4 DAY, NOW() - INTERVAL 2 DAY, 1, NOW() - INTERVAL 5 DAY),
+(911, 'MM-0911', 'Penyusunan ringkasan dokumen', 'Tugas evaluasi kinerja', 'Administrasi', 'Menengah', 'Pending', 3, NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 3 DAY, NULL, 1, NOW() - INTERVAL 4 DAY),
+(912, 'MM-0912', 'Finalisasi daftar arsip', 'Tugas evaluasi kinerja', 'Administrasi', 'Menengah', 'Selesai', 3, NOW(), NOW() - INTERVAL 2 DAY, NOW(), 1, NOW() - INTERVAL 3 DAY),
 
-(913, 'MM-0913', 'Pembaruan rencana proyek', 'Tugas evaluasi kinerja', 'Proyek', 'Menengah', 'Selesai', 4, '2026-10-20 15:00:00', '2026-10-18 09:00:00', '2026-10-20 15:45:00', 1),
-(914, 'MM-0914', 'Koordinasi dependensi proyek', 'Tugas evaluasi kinerja', 'Proyek', 'Menengah', 'Terlambat', 4, '2026-10-21 15:00:00', '2026-10-19 09:00:00', NULL, 1),
-(915, 'MM-0915', 'Penyusunan daftar risiko', 'Tugas evaluasi kinerja', 'Proyek', 'Menengah', 'Selesai', 4, '2026-10-22 16:00:00', '2026-10-20 09:00:00', '2026-10-22 15:30:00', 1),
-(916, 'MM-0916', 'Konfirmasi jadwal mitra', 'Tugas evaluasi kinerja', 'Proyek', 'Menengah', 'Pending', 4, '2026-10-23 15:00:00', '2026-10-21 09:00:00', NULL, 1),
-(917, 'MM-0917', 'Dokumentasi progres proyek', 'Tugas evaluasi kinerja', 'Proyek', 'Menengah', 'Selesai', 4, '2026-10-24 12:00:00', '2026-10-22 09:00:00', '2026-10-24 12:40:00', 1),
-(918, 'MM-0918', 'Pemeriksaan output sprint', 'Tugas evaluasi kinerja', 'Proyek', 'Menengah', 'Dalam Proses', 4, '2026-10-25 15:00:00', '2026-10-23 09:00:00', NULL, 1),
+(913, 'MM-0913', 'Pembaruan rencana proyek', 'Tugas evaluasi kinerja', 'Proyek', 'Menengah', 'Selesai', 4, NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 5 DAY, 1, NOW() - INTERVAL 8 DAY),
+(914, 'MM-0914', 'Koordinasi dependensi proyek', 'Tugas evaluasi kinerja', 'Proyek', 'Menengah', 'Terlambat', 4, NOW() - INTERVAL 4 DAY, NOW() - INTERVAL 6 DAY, NULL, 1, NOW() - INTERVAL 7 DAY),
+(915, 'MM-0915', 'Penyusunan daftar risiko', 'Tugas evaluasi kinerja', 'Proyek', 'Menengah', 'Selesai', 4, NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 3 DAY, 1, NOW() - INTERVAL 6 DAY),
+(916, 'MM-0916', 'Konfirmasi jadwal mitra', 'Tugas evaluasi kinerja', 'Proyek', 'Menengah', 'Pending', 4, NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 4 DAY, NULL, 1, NOW() - INTERVAL 5 DAY),
+(917, 'MM-0917', 'Dokumentasi progres proyek', 'Tugas evaluasi kinerja', 'Proyek', 'Menengah', 'Selesai', 4, NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 1 DAY, 1, NOW() - INTERVAL 4 DAY),
+(918, 'MM-0918', 'Pemeriksaan output sprint', 'Tugas evaluasi kinerja', 'Proyek', 'Menengah', 'Dalam Proses', 4, NOW(), NOW() - INTERVAL 2 DAY, NULL, 1, NOW() - INTERVAL 3 DAY),
 
-(919, 'MM-0919', 'Penyusunan SOP proses', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 5, '2026-10-20 16:00:00', '2026-10-18 09:00:00', '2026-10-20 14:00:00', 1),
-(920, 'MM-0920', 'Review kualitas dokumen', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 5, '2026-10-21 16:00:00', '2026-10-19 09:00:00', '2026-10-21 15:20:00', 1),
-(921, 'MM-0921', 'Pengumpulan masukan tim', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 5, '2026-10-22 16:00:00', '2026-10-20 09:00:00', '2026-10-22 15:00:00', 1),
-(922, 'MM-0922', 'Pemetaan proses kerja', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 5, '2026-10-23 16:00:00', '2026-10-21 09:00:00', '2026-10-23 15:30:00', 1),
-(923, 'MM-0923', 'Ringkasan hasil evaluasi', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 5, '2026-10-24 12:00:00', '2026-10-22 09:00:00', '2026-10-24 11:45:00', 1),
-(924, 'MM-0924', 'Rencana perbaikan proses', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Dalam Proses', 5, '2026-10-25 15:00:00', '2026-10-23 09:00:00', NULL, 1)
+(919, 'MM-0919', 'Penyusunan SOP proses', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 5, NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 5 DAY, 1, NOW() - INTERVAL 8 DAY),
+(920, 'MM-0920', 'Review kualitas dokumen', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 5, NOW() - INTERVAL 4 DAY, NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 4 DAY, 1, NOW() - INTERVAL 7 DAY),
+(921, 'MM-0921', 'Pengumpulan masukan tim', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 5, NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 3 DAY, 1, NOW() - INTERVAL 6 DAY),
+(922, 'MM-0922', 'Pemetaan proses kerja', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 5, NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 4 DAY, NOW() - INTERVAL 2 DAY, 1, NOW() - INTERVAL 5 DAY),
+(923, 'MM-0923', 'Ringkasan hasil evaluasi', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Selesai', 5, NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 1 DAY, 1, NOW() - INTERVAL 4 DAY),
+(924, 'MM-0924', 'Rencana perbaikan proses', 'Tugas evaluasi kinerja', 'Operasional', 'Menengah', 'Dalam Proses', 5, NOW(), NOW() - INTERVAL 2 DAY, NULL, 1, NOW() - INTERVAL 3 DAY)
 ON DUPLICATE KEY UPDATE title=VALUES(title);
 
 -- Initial Comments
 INSERT INTO comments (id, task_id, user_id, parent_id, text, created_at) VALUES
-(101, 1, 2, NULL, 'Laporan sudah saya unggah. Mohon ditinjau.', '2026-10-25 09:15:00'),
-(102, 1, 1, 101, 'Terima kasih. Mohon tambahkan analisis penyebab perubahan angka.', '2026-10-25 09:28:00'),
-(103, 1, 2, 102, 'Baik, saya tambahkan analisis dan mengunggah revisinya hari ini.', '2026-10-25 09:42:00')
+(101, 1, 2, NULL, 'Laporan sudah saya unggah. Mohon ditinjau.', NOW() - INTERVAL 8 HOUR),
+(102, 1, 1, 101, 'Terima kasih. Mohon tambahkan analisis penyebab perubahan angka.', NOW() - INTERVAL 7 HOUR),
+(103, 1, 2, 102, 'Baik, saya tambahkan analisis dan mengunggah revisinya hari ini.', NOW() - INTERVAL 6 HOUR)
+ON DUPLICATE KEY UPDATE text=VALUES(text);
 ON DUPLICATE KEY UPDATE text=VALUES(text);
 
 -- Initial Actions (Perlu Tindakan)

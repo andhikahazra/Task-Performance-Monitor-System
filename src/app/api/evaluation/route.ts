@@ -18,7 +18,20 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const mode = (searchParams.get('period') as 'week' | 'month') || 'month';
-    const dateParam = searchParams.get('date') || (mode === 'month' ? '2026-10' : '2026-10-19');
+
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const currentYearMonth = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+
+    // Hitung tanggal hari Senin pada pekan berjalan secara dinamis
+    const currentMonday = new Date(now);
+    const dayOfWeek = currentMonday.getDay();
+    const diffToMonday = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+    currentMonday.setDate(currentMonday.getDate() + diffToMonday);
+    currentMonday.setHours(0, 0, 0, 0);
+    const currentWeekMondayStr = `${currentMonday.getFullYear()}-${pad(currentMonday.getMonth() + 1)}-${pad(currentMonday.getDate())}`;
+
+    const dateParam = searchParams.get('date') || (mode === 'month' ? currentYearMonth : currentWeekMondayStr);
     const selectedUserId = searchParams.get('user_id');
     const department = searchParams.get('department')?.trim();
 
@@ -29,8 +42,8 @@ export async function GET(request: Request) {
 
     if (mode === 'month') {
       const parts = dateParam.split('-');
-      const y = parseInt(parts[0], 10) || 2026;
-      const m = parseInt(parts[1], 10) || 10;
+      const y = parseInt(parts[0], 10) || now.getFullYear();
+      const m = parseInt(parts[1], 10) || (now.getMonth() + 1);
       start = new Date(y, m - 1, 1, 0, 0, 0);
       end = new Date(y, m, 0, 23, 59, 59, 999);
 
@@ -39,7 +52,7 @@ export async function GET(request: Request) {
       label = `${start.getDate()} ${startMonthName} – ${end.getDate()} ${endMonthName}`;
     } else {
       const d = new Date(`${dateParam}T00:00:00`);
-      start = isNaN(d.getTime()) ? new Date('2026-10-19T00:00:00') : d;
+      start = isNaN(d.getTime()) ? currentMonday : d;
       end = new Date(start);
       end.setDate(end.getDate() + 6);
       end.setHours(23, 59, 59, 999);
@@ -82,8 +95,10 @@ export async function GET(request: Request) {
       WHERE deadline >= ? AND deadline <= ?
       ORDER BY deadline ASC
     `;
-    const startStr = start.toISOString().slice(0, 19).replace('T', ' ');
-    const endStr = end.toISOString().slice(0, 19).replace('T', ' ');
+    const formatSql = (d: Date) =>
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    const startStr = formatSql(start);
+    const endStr = formatSql(end);
     const tasks = await query<Task>(tasksSql, [startStr, endStr]);
 
     const referenceNow = mode === 'month' && end < new Date() ? end : new Date();

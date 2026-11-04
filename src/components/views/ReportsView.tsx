@@ -37,6 +37,28 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   const [drillDownStatus, setDrillDownStatus] = useState<string | null>(null);
   const [drillSearch, setDrillSearch] = useState<string>("");
 
+  // Dynamic Period Options (All + past 12 months)
+  const periodOptions = useMemo(() => {
+    const options: { label: string; value: string }[] = [
+      { label: "Semua Periode", value: "all" },
+    ];
+    const now = new Date();
+    const monthNames = [
+      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+      "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+    ];
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      options.push({
+        label: `${monthNames[d.getMonth()]} ${y}`,
+        value: `${y}-${m}`,
+      });
+    }
+    return options;
+  }, []);
+
   const loadReport = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -141,12 +163,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             <Select
               value={period}
               onChange={(e) => setPeriod(e.target.value)}
-              options={[
-                { label: "Semua Periode", value: "all" },
-                { label: "Oktober 2026", value: "2026-10" },
-                { label: "September 2026", value: "2026-09" },
-                { label: "Agustus 2026", value: "2026-08" },
-              ]}
+              options={periodOptions}
             />
           </div>
 

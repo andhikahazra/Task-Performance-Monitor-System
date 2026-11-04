@@ -9,6 +9,8 @@ import {
   Building2,
   Save,
   Check,
+  Database,
+  RefreshCw,
 } from "lucide-react";
 import { SafeUser } from "@/types/database";
 import { Button } from "@/components/ui/Button";
@@ -131,6 +133,37 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user }) => {
       error("Terjadi kendala jaringan saat menyimpan pengaturan.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const [isSeeding, setIsSeeding] = useState<boolean>(false);
+
+  const handleRunSeeder = async () => {
+    if (
+      !confirm(
+        "Apakah Anda yakin ingin menjalankan seeder dinamis? Ini akan memperbarui data operasional dan indeks performa tanpa batas statis."
+      )
+    ) {
+      return;
+    }
+
+    setIsSeeding(true);
+    try {
+      const res = await fetch("/api/seed", { method: "POST" });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        success("Seeder dinamis & optimasi database berhasil dijalankan!");
+        setTimeout(() => {
+          window.location.reload();
+        }, 1200);
+      } else {
+        error(json.message || "Gagal menjalankan seeder.");
+      }
+    } catch (err) {
+      console.error(err);
+      error("Kendala jaringan saat menjalankan seeder.");
+    } finally {
+      setIsSeeding(false);
     }
   };
 
@@ -345,6 +378,45 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user }) => {
                 >
                   Simpan Perubahan Organisasi
                 </Button>
+              </div>
+            </PanelCard>
+          </div>
+        )}
+
+        {/* Database Seeder & Performance Optimization (Admin Only) */}
+        {user.role === "admin" && (
+          <div className="lg:col-span-2">
+            <PanelCard
+              title="Database Seeder & Optimasi Performa"
+              subtitle="Otomasi pengisian data dinamis tanpa batas statis dan pembuatan indeks query skala tinggi"
+              icon={<Database className="h-4 w-4" />}
+              iconTheme="amber"
+            >
+              <div className="space-y-4">
+                <p className="text-sm text-slate-600 dark:text-zinc-400">
+                  Modul ini secara dinamis memperbarui indeks komposit performa query (<code className="text-xs bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded font-mono">idx_tasks_eval</code>, <code className="text-xs bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded font-mono">idx_tasks_created</code>, <code className="text-xs bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded font-mono">idx_comments_task_created</code>) serta mengisi data operasional, tugas aktif hari ini, tren produktivitas 7 hari, dan riwayat evaluasi berkala secara dinamis relatif terhadap waktu saat ini (<code className="text-xs bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded font-mono">NOW()</code>).
+                </p>
+
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                  <div>
+                    <div className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                      Regenerasi Data Operasional Dinamis
+                    </div>
+                    <div className="text-xs text-amber-700 dark:text-amber-300/80 mt-0.5">
+                      8 Pengguna · 84 Pekerjaan Dinamis · 7 Indeks Komposit · Komentar & Notifikasi
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="primary"
+                    onClick={handleRunSeeder}
+                    isLoading={isSeeding}
+                    leftIcon={<RefreshCw className={`h-4 w-4 ${isSeeding ? "animate-spin" : ""}`} />}
+                    className="bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+                  >
+                    Jalankan Seeder Dinamis
+                  </Button>
+                </div>
               </div>
             </PanelCard>
           </div>
