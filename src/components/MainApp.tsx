@@ -37,7 +37,6 @@ import {
   Briefcase,
   Eye,
   EyeOff,
-  Sparkles,
   ExternalLink,
   MessageSquare,
   CornerDownRight,
@@ -309,35 +308,6 @@ function MainAppContent({ initialView }: { initialView?: ActiveViewType }) {
     } finally {
       setAuthLoading(false);
     }
-  };
-
-  // Quick Demo Login
-  const handleDemoLogin = (email: string, pass: string) => {
-    setLoginEmail(email);
-    setLoginPassword(pass);
-    // trigger login directly with parameters
-    setAuthLoading(true);
-    fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password: pass }),
-    })
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && json.data?.user) {
-          success(`Masuk sebagai demo: ${json.data.user.full_name}`);
-          setCurrentUser(json.data.user);
-          setActiveView("dashboard");
-        } else {
-          error(json.message || "Gagal masuk akun demo.");
-        }
-      })
-      .catch(() => {
-        error("Terjadi kendala jaringan.");
-      })
-      .finally(() => {
-        setAuthLoading(false);
-      });
   };
 
   // Register Submit
@@ -655,42 +625,6 @@ function MainAppContent({ initialView }: { initialView?: ActiveViewType }) {
               Daftar Akun
             </button>
           </div>
-
-          {/* Quick Demo Accounts Banner */}
-          {authTab === "login" && (
-            <div className="rounded-xl border border-blue-200/80 bg-blue-50/70 p-3.5 dark:border-blue-900/40 dark:bg-blue-950/20 space-y-2.5">
-              <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-blue-950 dark:text-blue-300">
-                <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                <span>Akun Uji Coba Cepat (Demo)</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 pt-0.5">
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleDemoLogin("admin@demo.com", "Admin123")
-                  }
-                  className="rounded-lg border border-blue-200 bg-white p-2.5 text-left text-xs text-slate-800 hover:border-blue-400 hover:bg-blue-50/60 transition-colors shadow-2xs active:scale-[0.98] cursor-pointer"
-                >
-                  <div className="font-bold text-slate-900 dark:text-zinc-100">Super Admin</div>
-                  <div className="text-[11px] text-blue-600 dark:text-blue-400 font-mono mt-0.5 font-medium">
-                    admin@demo.com
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleDemoLogin("user@demo.com", "User123")
-                  }
-                  className="rounded-lg border border-blue-200 bg-white p-2.5 text-left text-xs text-slate-800 hover:border-blue-400 hover:bg-blue-50/60 transition-colors shadow-2xs active:scale-[0.98] cursor-pointer"
-                >
-                  <div className="font-bold text-slate-900 dark:text-zinc-100">Pengguna (User)</div>
-                  <div className="text-[11px] text-blue-600 dark:text-blue-400 font-mono mt-0.5 font-medium">
-                    user@demo.com
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Login Form */}
           {authTab === "login" ? (
