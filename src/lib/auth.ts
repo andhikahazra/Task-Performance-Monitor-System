@@ -1,7 +1,8 @@
 import { SignJWT, jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
-import { JWTPayload, UserRole } from '@/types/database';
+import { JWTPayload, UserRole, SafeUser } from '@/types/database';
+import { queryOne } from '@/lib/db';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'mm-super-secret-development-jwt-key-32-chars-minimum';
 const secretKey = new TextEncoder().encode(JWT_SECRET);
@@ -116,6 +117,30 @@ export async function getSessionUser(request?: Request): Promise<JWTPayload | nu
   }
 
   return await verifyToken(token);
+}
+
+/**
+ * Mengambil data SafeUser lengkap dari database berdasarkan sesi yang aktif di Server Component / Request
+ */
+export async function getCurrentUser(request?: Request): Promise<SafeUser | null> {
+  try {
+    const session = await getSessionUser(request);
+    if (!session || !session.id) {
+      return null;
+    }
+
+    const user = await queryOne<SafeUser>(
+      `SELECT id, full_name, email, department, job_title, role, status, avatar_initials, last_activity_at, created_at, updated_at
+       FROM users
+       WHERE id = ?`,
+      [session.id]
+    );
+
+    return user || null;
+  } catch (err) {
+    console.error('Error saat getCurrentUser:', err);
+    return null;
+  }
 }
 
 /**

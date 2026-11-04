@@ -57,12 +57,28 @@ type ActiveViewType =
   | "settings"
   | "notifications";
 
-function MainAppContent({ initialView }: { initialView?: ActiveViewType }) {
+export interface MainAppProps {
+  initialView?: ActiveViewType;
+  initialUser?: SafeUser | null;
+}
+
+function MainAppContent({ initialView, initialUser }: MainAppProps) {
   const { success, error, info } = useToast();
 
-  // Auth state
-  const [currentUser, setCurrentUser] = useState<SafeUser | null>(null);
-  const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
+  // Auth state: initialized directly from SSR initialUser or localStorage cache
+  const [currentUser, setCurrentUser] = useState<SafeUser | null>(() => {
+    if (initialUser !== undefined) return initialUser;
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("mm_user");
+        return cached ? JSON.parse(cached) : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+  const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(false);
 
   // Login state
   const [loginEmail, setLoginEmail] = useState<string>("");
@@ -130,18 +146,26 @@ function MainAppContent({ initialView }: { initialView?: ActiveViewType }) {
 
   // Check auth session
   const checkAuth = useCallback(async () => {
-    setIsCheckingAuth(true);
     try {
       const res = await fetch("/api/auth/me");
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data?.user) {
           setCurrentUser(json.data.user);
+          try {
+            localStorage.setItem("mm_user", JSON.stringify(json.data.user));
+          } catch {}
         } else {
           setCurrentUser(null);
+          try {
+            localStorage.removeItem("mm_user");
+          } catch {}
         }
       } else {
         setCurrentUser(null);
+        try {
+          localStorage.removeItem("mm_user");
+        } catch {}
       }
     } catch (err) {
       console.error("Auth check failed:", err);
@@ -152,8 +176,24 @@ function MainAppContent({ initialView }: { initialView?: ActiveViewType }) {
   }, []);
 
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    // Only verify on client if server did not provide initialUser
+    if (initialUser === undefined) {
+      checkAuth();
+    }
+  }, [checkAuth, initialUser]);
+
+  // Keep localStorage in sync with currentUser
+  useEffect(() => {
+    if (currentUser) {
+      try {
+        localStorage.setItem("mm_user", JSON.stringify(currentUser));
+      } catch {}
+    } else {
+      try {
+        localStorage.removeItem("mm_user");
+      } catch {}
+    }
+  }, [currentUser]);
 
   // Load unread notifications count
   const loadNotificationsCount = useCallback(async () => {
@@ -285,6 +325,9 @@ function MainAppContent({ initialView }: { initialView?: ActiveViewType }) {
       if (json.success && json.data?.user) {
         success(`Selamat datang kembali, ${json.data.user.full_name}!`);
         setCurrentUser(json.data.user);
+        try {
+          localStorage.setItem("mm_user", JSON.stringify(json.data.user));
+        } catch {}
         setActiveView("dashboard");
       } else {
         error(json.message || "Gagal masuk. Periksa kembali email dan password.");
@@ -305,6 +348,9 @@ function MainAppContent({ initialView }: { initialView?: ActiveViewType }) {
       // Ignore
     }
     setCurrentUser(null);
+    try {
+      localStorage.removeItem("mm_user");
+    } catch {}
     setActiveView("dashboard");
     info("Anda telah keluar dari sistem.");
   };
@@ -496,23 +542,6 @@ function MainAppContent({ initialView }: { initialView?: ActiveViewType }) {
         return [{ label: "Workspace" }, { label: "Dashboard" }];
     }
   }, [activeView, currentUser?.role]);
-
-  // Loading Screen while checking auth
-  if (isCheckingAuth) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--color-surface,#f4f6fa)]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-xl font-black text-white shadow-lg animate-pulse">
-            M
-          </div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-            <RotateCw className="h-4 w-4 animate-spin text-blue-600" />
-            <span>Memeriksa sesi pengguna...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // 1. Unauthenticated View (AuthLayout with Login)
   if (!currentUser) {
@@ -1054,12 +1083,11 @@ export type { ActiveViewType };
 
 export function MainApp({
   initialView,
-}: {
-  initialView?: ActiveViewType;
-}) {
+  initialUser,
+}: MainAppProps) {
   return (
     <ToastProvider>
-      <MainAppContent initialView={initialView} />
+      <MainAppContent initialView={initialView} initialUser={initialUser} />
     </ToastProvider>
   );
 }
