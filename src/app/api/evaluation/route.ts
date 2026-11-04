@@ -76,11 +76,8 @@ export async function GET(request: Request) {
       userParams.push(department);
     }
 
-    // Jika user biasa, hanya izinkan evaluasi dirinya sendiri
-    if (auth.user.role === 'user') {
-      userQuery += ' AND id = ?';
-      userParams.push(auth.user.id);
-    } else if (selectedUserId && selectedUserId !== 'all') {
+    // Jika filter pengguna spesifik dipilih
+    if (selectedUserId && selectedUserId !== 'all') {
       userQuery += ' AND id = ?';
       userParams.push(Number(selectedUserId));
     }
@@ -281,10 +278,17 @@ export async function GET(request: Request) {
         description: `${best.userName} membukukan skor ${best.score}/100 dengan tingkat penyelesaian ${best.completionRate ?? 0}% dan ketepatan waktu ${best.timelyRate ?? 0}%. Alur kerja yang diterapkan dapat dijadikan tolok ukur standar tim.`,
       });
 
-      aiFindings.push({
-        title: 'Prioritas pembinaan & penyesuaian beban',
-        description: `${low.userName} mencatat skor ${low.score}/100 (${low.category}). Disarankan evaluasi hambatan teknis dan penyesuaian alokasi pekerjaan sebelum periode berikutnya.`,
-      });
+      if (low.userId !== best.userId) {
+        aiFindings.push({
+          title: 'Prioritas pembinaan & penyesuaian beban',
+          description: `${low.userName} mencatat skor ${low.score}/100 (${low.category}). Disarankan evaluasi hambatan teknis dan penyesuaian alokasi pekerjaan sebelum periode berikutnya.`,
+        });
+      } else {
+        aiFindings.push({
+          title: 'Rekomendasi pertumbuhan berkala',
+          description: `Pertahankan ritme penyelesaian pekerjaan dan pastikan konsistensi pemenuhan bukti selesai tepat waktu.`,
+        });
+      }
 
       aiFindings.push({
         title: 'Mitigasi risiko operasional',

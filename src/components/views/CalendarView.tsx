@@ -44,8 +44,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Hitung rentang 42 kotak tanggal kalender (termasuk overflow akhir & awal bulan)
+      const firstDayIndex = new Date(year, month, 1).getDay();
+      const startGridDate = new Date(year, month, 1 - firstDayIndex, 0, 0, 0);
+      const endGridDate = new Date(year, month, 42 - firstDayIndex, 23, 59, 59);
+
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const startStr = `${startGridDate.getFullYear()}-${pad(startGridDate.getMonth() + 1)}-${pad(startGridDate.getDate())} 00:00:00`;
+      const endStr = `${endGridDate.getFullYear()}-${pad(endGridDate.getMonth() + 1)}-${pad(endGridDate.getDate())} 23:59:59`;
+
       const [tasksRes, usersRes] = await Promise.all([
-        fetch(`/api/tasks?year=${year}&month=${month + 1}&include_demo=false`),
+        fetch(`/api/tasks?start_date=${encodeURIComponent(startStr)}&end_date=${encodeURIComponent(endStr)}&include_demo=false`),
         user.role === "admin" ? fetch("/api/users") : Promise.resolve(null),
       ]);
 

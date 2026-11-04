@@ -87,12 +87,14 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
       },
       {
         id: "nav-actions",
-        title: "Perlu Tindakan",
-        subtitle: "Verifikasi tugas selesai dan persetujuan pendaftaran user",
+        title: role === "user" ? "Status Permohonan" : "Perlu Tindakan",
+        subtitle:
+          role === "user"
+            ? "Pantau status permohonan persetujuan tugas Anda"
+            : "Verifikasi tugas selesai dan persetujuan pendaftaran user",
         category: "menu",
         href: "/actions",
         icon: <Clock className="h-4 w-4" />,
-        adminOnly: true,
       },
       {
         id: "nav-evaluation",
@@ -101,7 +103,6 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
         category: "menu",
         href: "/evaluation",
         icon: <TrendingUp className="h-4 w-4" />,
-        adminOnly: true,
       },
       {
         id: "nav-reports",
@@ -110,14 +111,6 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
         category: "menu",
         href: "/reports",
         icon: <FileText className="h-4 w-4" />,
-      },
-      {
-        id: "nav-registration",
-        title: "Pendaftaran Pengguna",
-        subtitle: "Formulir pendaftaran akun pegawai baru ke sistem",
-        category: "menu",
-        href: "/registration",
-        icon: <UserPlus className="h-4 w-4" />,
       },
       {
         id: "nav-password",

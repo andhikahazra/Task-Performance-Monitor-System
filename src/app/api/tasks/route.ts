@@ -73,6 +73,17 @@ export async function GET(request: Request) {
       }
     }
 
+    const startDateParam = searchParams.get('start_date');
+    const endDateParam = searchParams.get('end_date');
+    if (startDateParam) {
+      conditions.push('t.deadline >= ?');
+      params.push(startDateParam);
+    }
+    if (endDateParam) {
+      conditions.push('t.deadline <= ?');
+      params.push(endDateParam);
+    }
+
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     let orderByClause = `
@@ -213,7 +224,8 @@ export async function POST(request: Request) {
       }
     }
 
-    const startedAt = cleanStatus === 'Dalam Proses' ? new Date() : null;
+    let startedAt = cleanStatus === 'Dalam Proses' || cleanStatus === 'Selesai' ? new Date() : null;
+    let completedAt = cleanStatus === 'Selesai' ? new Date() : null;
 
     const result = await transaction(async (conn) => {
       // Cari kode pekerjaan tertinggi untuk penomoran otomatis yang berurutan
@@ -231,18 +243,27 @@ export async function POST(request: Request) {
       const code = `MM-${String(nextNumber).padStart(4, '0')}`;
 
       const [insertResult] = (await conn.execute(
-        `INSERT INTO tasks (code, title, description, category, priority, status, owner_id, deadline, started_at, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-        [code, cleanTitle, cleanDesc, cleanCat, cleanPriority, cleanStatus, targetOwnerId, deadline, startedAt]
+        `INSERT INTO tasks (code, title, description, category, priority, status, owner_id, deadline, started_at, completed_at, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        [code, cleanTitle, cleanDesc, cleanCat, cleanPriority, cleanStatus, targetOwnerId, deadline, startedAt, completedAt]
       )) as any;
 
       const taskId = insertResult.insertId;
 
-      // Buat notifikasi bahwa pekerjaan baru telah dibuat
+      // Jika tugas ditugaskan ke pegawai lain oleh Admin, beri notifikasi khusus kepada pegawai tersebut
+      if (targetOwnerId !== auth.user.id) {
+        await conn.execute(
+          `INSERT INTO notifications (user_id, level, title, body, task_id, is_read, created_at)
+           VALUES (?, 'Penting', 'Pekerjaan baru ditugaskan kepada Anda', ?, ?, 0, NOW())`,
+          [targetOwnerId, `${auth.user.full_name} menugaskan pekerjaan baru: "${cleanTitle}".`, taskId]
+        );
+      }
+
+      // Buat notifikasi siaran informasi bahwa pekerjaan baru telah dibuat
       await conn.execute(
         `INSERT INTO notifications (user_id, level, title, body, task_id, is_read, created_at)
          VALUES (NULL, 'Informasi', 'Pekerjaan baru dibuat', ?, ?, 0, NOW())`,
-        [`${auth.user.full_name} membuat pekerjaan baru: "${cleanTitle}".`, taskId]
+        [`${auth.user.full_name} membuat pekerjaan: "${cleanTitle}".`, taskId]
       );
 
       return { taskId, code };

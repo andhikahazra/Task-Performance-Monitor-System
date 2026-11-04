@@ -86,33 +86,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: "actions",
-      label: "Perlu Tindakan",
+      label: role === "user" ? "Status Permohonan" : "Perlu Tindakan",
       href: "/actions",
       icon: <Clock className="h-4 w-4 shrink-0" />,
       badge:
         pendingActionsCount && pendingActionsCount > 0
           ? pendingActionsCount
           : undefined,
-      adminOnly: true,
     },
     {
       id: "evaluation",
       label: "Evaluasi & Ranking",
       href: "/evaluation",
       icon: <TrendingUp className="h-4 w-4 shrink-0" />,
-      adminOnly: true,
     },
     {
       id: "reports",
       label: "Laporan",
       href: "/reports",
       icon: <FileText className="h-4 w-4 shrink-0" />,
-    },
-    {
-      id: "registration",
-      label: "Pendaftaran",
-      href: "/registration",
-      icon: <UserPlus className="h-4 w-4 shrink-0" />,
     },
     {
       id: "password",

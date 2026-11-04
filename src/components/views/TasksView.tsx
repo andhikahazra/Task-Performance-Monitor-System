@@ -14,6 +14,9 @@ import {
   LayoutList,
   LayoutGrid,
   CheckCircle2,
+  Pencil,
+  Trash2,
+  UserCheck,
 } from "lucide-react";
 import { Task, SafeUser, Comment } from "@/types/database";
 import { Button } from "@/components/ui/Button";
@@ -56,6 +59,26 @@ export const TasksView: React.FC<TasksViewProps> = ({
   // View mode: 'table' (default) vs 'grid' (cards)
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
 
+  // Active Users List (for assignment & owner selection)
+  const [usersList, setUsersList] = useState<SafeUser[]>([]);
+
+  useEffect(() => {
+    async function loadUsers() {
+      try {
+        const res = await fetch("/api/users");
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data)) {
+            setUsersList(json.data);
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    loadUsers();
+  }, []);
+
   // Create Task Modal State
   const [isCreateOpen, setIsCreateOpen] = useState<boolean>(createModalOpen);
   const [createLoading, setCreateLoading] = useState<boolean>(false);
@@ -66,6 +89,19 @@ export const TasksView: React.FC<TasksViewProps> = ({
     deadline: "",
     priority: "Menengah",
     status: "Belum Mulai",
+    owner_id: String(user.id),
+  });
+
+  // Edit Task Modal State
+  const [editModalTask, setEditModalTask] = useState<Task | null>(null);
+  const [editLoading, setEditLoading] = useState<boolean>(false);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    category: "Operasional",
+    deadline: "",
+    priority: "Menengah",
+    owner_id: String(user.id),
   });
 
   // Task Detail & Discussion Modal State
@@ -160,6 +196,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
           deadline: "",
           priority: "Menengah",
           status: "Belum Mulai",
+          owner_id: String(user.id),
         });
         loadTasks();
       } else {
@@ -318,6 +355,91 @@ export const TasksView: React.FC<TasksViewProps> = ({
       error("Terjadi kesalahan koneksi ke server.");
     } finally {
       setStatusLoading(false);
+    }
+  };
+
+  // Open Edit Task Modal
+  const openEditModal = (task: Task) => {
+    setEditModalTask(task);
+    const d = new Date(
+      typeof task.deadline === "string" ? task.deadline.replace(" ", "T") : task.deadline
+    );
+    setEditForm({
+      title: task.title,
+      description: task.description || "",
+      category: task.category || "Operasional",
+      deadline: formatLocalDateTime(d),
+      priority: task.priority || "Menengah",
+      owner_id: String(task.owner_id),
+    });
+  };
+
+  // Submit Edit Task
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editModalTask) return;
+    if (!editForm.title.trim() || !editForm.deadline) {
+      error("Judul dan tenggat waktu wajib diisi.");
+      return;
+    }
+
+    setEditLoading(true);
+    try {
+      const payload: Record<string, any> = {
+        title: editForm.title.trim(),
+        description: editForm.description.trim() || null,
+        category: editForm.category,
+        priority: editForm.priority,
+        deadline: editForm.deadline,
+      };
+
+      if (user.role === "admin" && editForm.owner_id) {
+        payload.owner_id = Number(editForm.owner_id);
+      }
+
+      const res = await fetch(`/api/tasks/${editModalTask.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        success("Rincian pekerjaan berhasil diperbarui!");
+        setEditModalTask(null);
+        loadTasks();
+      } else {
+        error(json.message || "Gagal memperbarui rincian pekerjaan.");
+      }
+    } catch (err) {
+      console.error(err);
+      error("Terjadi kendala jaringan saat memperbarui pekerjaan.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  // Handle Delete Task
+  const handleDeleteTask = async (task: Task) => {
+    const confirmed = window.confirm(
+      `Apakah Anda yakin ingin menghapus pekerjaan "${task.title}" (${task.code})? Tindakan ini tidak dapat dibatalkan.`
+    );
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (json.success) {
+        success(`Pekerjaan ${task.code} berhasil dihapus.`);
+        loadTasks();
+      } else {
+        error(json.message || "Gagal menghapus pekerjaan.");
+      }
+    } catch (err) {
+      console.error(err);
+      error("Terjadi kendala jaringan saat menghapus pekerjaan.");
     }
   };
 
@@ -541,7 +663,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
                         </div>
                       </td>
                       <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 whitespace-nowrap">
-                        {new Date(task.deadline).toLocaleDateString("id-ID", {
+                        {new Date(
+                          typeof task.deadline === "string" ? task.deadline.replace(" ", "T") : task.deadline
+                        ).toLocaleDateString("id-ID", {
                           day: "numeric",
                           month: "short",
                           year: "numeric",
@@ -571,6 +695,26 @@ export const TasksView: React.FC<TasksViewProps> = ({
                           >
                             Ubah Status
                           </button>
+                          {(user.role === "admin" || task.owner_id === user.id) && (
+                            <>
+                              <button
+                                type="button"
+                                title="Edit Rincian Pekerjaan"
+                                onClick={() => openEditModal(task)}
+                                className="p-1 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-md transition-colors cursor-pointer active:scale-[0.98]"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                title="Hapus Pekerjaan"
+                                onClick={() => handleDeleteTask(task)}
+                                className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-md transition-colors cursor-pointer active:scale-[0.98]"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -689,6 +833,26 @@ export const TasksView: React.FC<TasksViewProps> = ({
                           >
                             Ubah Status
                           </button>
+                          {(user.role === "admin" || task.owner_id === user.id) && (
+                            <>
+                              <button
+                                type="button"
+                                title="Edit Rincian Pekerjaan"
+                                onClick={() => openEditModal(task)}
+                                className="p-1 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-md transition-colors cursor-pointer active:scale-[0.98]"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                title="Hapus Pekerjaan"
+                                onClick={() => handleDeleteTask(task)}
+                                className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-md transition-colors cursor-pointer active:scale-[0.98]"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -798,6 +962,21 @@ export const TasksView: React.FC<TasksViewProps> = ({
             </FormField>
           </div>
 
+          {user.role === "admin" && usersList.length > 0 && (
+            <FormField label="Penanggung Jawab (Pegawai)" required>
+              <Select
+                value={createForm.owner_id}
+                onChange={(e) =>
+                  setCreateForm({ ...createForm, owner_id: e.target.value })
+                }
+                options={usersList.map((u) => ({
+                  label: `${u.full_name} (${u.job_title || "Staf"} · ${u.department || "Operasional"})`,
+                  value: String(u.id),
+                }))}
+              />
+            </FormField>
+          )}
+
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-zinc-800">
             <Button
               variant="outline"
@@ -814,6 +993,113 @@ export const TasksView: React.FC<TasksViewProps> = ({
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Modal Edit Rincian Pekerjaan */}
+      <Modal
+        isOpen={Boolean(editModalTask)}
+        onClose={() => setEditModalTask(null)}
+        title="Edit Rincian Pekerjaan"
+        subtitle={
+          editModalTask
+            ? `${editModalTask.code} · Perbarui judul, deskripsi, tenggat waktu, atau penugasan`
+            : "Perbarui informasi pekerjaan."
+        }
+        size="lg"
+      >
+        {editModalTask && (
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <FormField label="Judul Pekerjaan" required>
+              <Input
+                required
+                value={editForm.title}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, title: e.target.value })
+                }
+              />
+            </FormField>
+
+            <FormField label="Deskripsi">
+              <Textarea
+                rows={3}
+                value={editForm.description}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, description: e.target.value })
+                }
+              />
+            </FormField>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Tenggat Waktu (Deadline)" required>
+                <Input
+                  type="datetime-local"
+                  required
+                  value={editForm.deadline}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, deadline: e.target.value })
+                  }
+                />
+              </FormField>
+
+              <FormField label="Kategori" required>
+                <Select
+                  value={editForm.category}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, category: e.target.value })
+                  }
+                  options={[
+                    "Operasional",
+                    "Administrasi",
+                    "Proyek",
+                    "Keuangan",
+                    "Teknologi",
+                    "Lainnya",
+                  ]}
+                />
+              </FormField>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Prioritas" required>
+                <Select
+                  value={editForm.priority}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, priority: e.target.value })
+                  }
+                  options={["Menengah", "Tinggi", "Rendah", "Kritis"]}
+                />
+              </FormField>
+
+              {user.role === "admin" && usersList.length > 0 && (
+                <FormField label="Penanggung Jawab (Pegawai)" required>
+                  <Select
+                    value={editForm.owner_id}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, owner_id: e.target.value })
+                    }
+                    options={usersList.map((u) => ({
+                      label: `${u.full_name} (${u.job_title || "Staf"} · ${u.department || "Operasional"})`,
+                      value: String(u.id),
+                    }))}
+                  />
+                </FormField>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-zinc-800">
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => setEditModalTask(null)}
+              >
+                Batal
+              </Button>
+              <Button variant="primary" type="submit" isLoading={editLoading}>
+                Simpan Perubahan
+              </Button>
+            </div>
+          </form>
+        )}
       </Modal>
 
       {/* 2. Modal Detail & Diskusi Komentar (Nested Replies) */}
@@ -875,7 +1161,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
                     Deadline
                   </span>
                   <div className="font-medium text-slate-800 dark:text-zinc-200">
-                    {new Date(detailTask.deadline).toLocaleDateString("id-ID", {
+                    {new Date(
+                      typeof detailTask.deadline === "string" ? detailTask.deadline.replace(" ", "T") : detailTask.deadline
+                    ).toLocaleDateString("id-ID", {
                       day: "numeric",
                       month: "short",
                       hour: "2-digit",

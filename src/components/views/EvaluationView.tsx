@@ -675,7 +675,9 @@ export const EvaluationView: React.FC<EvaluationViewProps> = ({ user }) => {
                       <div className="text-[10px] text-slate-400">{t.department}</div>
                     </td>
                     <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 font-mono">
-                      {new Date(t.deadline).toLocaleDateString("id-ID", {
+                      {new Date(
+                        typeof t.deadline === "string" ? t.deadline.replace(" ", "T") : t.deadline
+                      ).toLocaleDateString("id-ID", {
                         day: "numeric",
                         month: "short",
                         hour: "2-digit",

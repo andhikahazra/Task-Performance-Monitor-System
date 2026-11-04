@@ -675,6 +675,7 @@ function MainAppContent({ initialView, initialUser }: MainAppProps) {
           onOpenTaskDetail={(taskId) => {
             setSelectedTaskId(taskId);
             setActiveView("tasks");
+            window.history.pushState(null, "", "/tasks");
           }}
         />
       )}
@@ -706,6 +707,7 @@ function MainAppContent({ initialView, initialUser }: MainAppProps) {
           onOpenTaskDetail={(taskId) => {
             setSelectedTaskId(taskId);
             setActiveView("tasks");
+            window.history.pushState(null, "", "/tasks");
           }}
           onRefreshNotifications={loadNotificationsCount}
         />
@@ -769,15 +771,16 @@ function MainAppContent({ initialView, initialUser }: MainAppProps) {
                     Deadline
                   </span>
                   <div className="font-medium text-slate-800 dark:text-zinc-200">
-                    {new Date(detailModalTask.deadline).toLocaleDateString(
-                      "id-ID",
-                      {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }
-                    )}
+                    {new Date(
+                      typeof detailModalTask.deadline === "string"
+                        ? detailModalTask.deadline.replace(" ", "T")
+                        : detailModalTask.deadline
+                    ).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </div>
                 </div>
                 <div>

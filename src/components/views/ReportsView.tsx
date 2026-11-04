@@ -107,7 +107,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       `"${t.title.replace(/"/g, '""')}"`,
       `"${t.category}"`,
       `"${t.owner_name || ""}"`,
-      `"${new Date(t.deadline).toISOString()}"`,
+      `"${new Date(typeof t.deadline === "string" ? t.deadline.replace(" ", "T") : t.deadline).toISOString()}"`,
       `"${t.status}"`,
       `"${t.priority}"`,
       `"${t.evidence_url || ""}"`,
@@ -380,7 +380,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                         {task.owner_name || "Staf"}
                       </td>
                       <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 text-slate-600 dark:text-zinc-300 whitespace-nowrap">
-                        {new Date(task.deadline).toLocaleDateString("id-ID", {
+                        {new Date(
+                          typeof task.deadline === "string" ? task.deadline.replace(" ", "T") : task.deadline
+                        ).toLocaleDateString("id-ID", {
                           day: "numeric",
                           month: "short",
                           hour: "2-digit",

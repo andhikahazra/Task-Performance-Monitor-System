@@ -123,13 +123,15 @@ export const ActionsView: React.FC<ActionsViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="text-[11px] font-bold tracking-wider uppercase text-slate-500 dark:text-zinc-400">
-            ADMINISTRASI
+            {user.role === "user" ? "STATUS PERMOHONAN" : "ADMINISTRASI"}
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight mt-1">
-            Perlu Tindakan
+            {user.role === "user" ? "Status Permohonan" : "Perlu Tindakan"}
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-0.5">
-            Permintaan persetujuan status, tenggat waktu, dan registrasi pengguna.
+            {user.role === "user"
+              ? "Pantau status permohonan persetujuan status tugas Anda kepada Super Admin."
+              : "Permintaan persetujuan status, tenggat waktu, dan registrasi pengguna."}
           </p>
         </div>
 
@@ -152,15 +154,20 @@ export const ActionsView: React.FC<ActionsViewProps> = ({
       <div className="flex items-center gap-2.5 rounded-lg border border-blue-200 bg-blue-50/70 p-3 text-xs text-blue-900 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300">
         <Info className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
         <span>
-          Keputusan Super Admin di sini akan memperbarui status tugas secara
-          otomatis dan mengirimkan notifikasi audit ke sistem.
+          {user.role === "user"
+            ? "Status permohonan yang telah disetujui atau ditolak akan langsung memperbarui status pekerjaan Anda."
+            : "Keputusan Super Admin di sini akan memperbarui status tugas secara otomatis dan mengirimkan notifikasi audit ke sistem."}
         </span>
       </div>
 
       {/* Actions List */}
       <PanelCard
         title="Daftar Permohonan"
-        subtitle="Permohonan yang memerlukan tindakan persetujuan atau penolakan"
+        subtitle={
+          user.role === "user"
+            ? "Riwayat permohonan yang diajukan beserta catatan keputusan"
+            : "Permohonan yang memerlukan tindakan persetujuan atau penolakan"
+        }
         icon={<Clock className="h-4 w-4" />}
         iconTheme="blue"
       >
