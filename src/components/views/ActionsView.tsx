@@ -198,8 +198,8 @@ export const ActionsView: React.FC<ActionsViewProps> = ({
                               act.status === "pending"
                                 ? "Menunggu"
                                 : act.status === "approved"
-                                ? "Selesai"
-                                : "Terlambat"
+                                ? "Disetujui"
+                                : "Ditolak"
                             }
                           >
                             {act.status === "pending"

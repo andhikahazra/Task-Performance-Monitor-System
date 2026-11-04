@@ -737,16 +737,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="table-wrap rounded-lg border border-slate-200 dark:border-zinc-800 overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border-b border-slate-200 dark:border-zinc-800">
-                    <th className="px-3.5 py-3 text-xs uppercase font-bold">Pekerjaan</th>
-                    <th className="px-3.5 py-3 text-xs uppercase font-bold">Pemilik</th>
-                    <th className="px-3.5 py-3 text-xs uppercase font-bold">Deadline</th>
-                    <th className="px-3.5 py-3 text-xs uppercase font-bold">Prioritas</th>
-                    <th className="px-3.5 py-3 text-xs uppercase font-bold">Status</th>
-                    <th className="px-3.5 py-3 text-xs uppercase font-bold text-right">Aksi</th>
+                  <tr className="bg-slate-50 dark:bg-zinc-900/80 text-slate-500 dark:text-zinc-400 border-b border-slate-200 dark:border-zinc-800">
+                    <th className="px-3.5 py-2.5 text-[11px] uppercase tracking-wider font-bold">Pekerjaan</th>
+                    <th className="px-3.5 py-2.5 text-[11px] uppercase tracking-wider font-bold">Pemilik</th>
+                    <th className="px-3.5 py-2.5 text-[11px] uppercase tracking-wider font-bold">Deadline</th>
+                    <th className="px-3.5 py-2.5 text-[11px] uppercase tracking-wider font-bold">Prioritas</th>
+                    <th className="px-3.5 py-2.5 text-[11px] uppercase tracking-wider font-bold">Status</th>
+                    <th className="px-3.5 py-2.5 text-[11px] uppercase tracking-wider font-bold text-right">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-zinc-800">
+                <tbody className="divide-y divide-slate-200/80 dark:divide-zinc-800">
                   {filteredTasks.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-8 text-center text-slate-400 dark:text-zinc-500">
@@ -754,60 +754,104 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </td>
                     </tr>
                   ) : (
-                    filteredTasks.map((task) => (
-                      <tr
-                        key={task.id}
-                        className="hover:bg-blue-50/40 dark:hover:bg-zinc-800/30 transition-colors"
-                      >
-                        <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60">
-                          <div className="font-semibold text-slate-900 dark:text-zinc-100">
-                            {task.title}
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-mono">
-                            {task.code}
-                          </div>
-                        </td>
-                        <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60">
-                          {task.owner_name || "Staf"}
-                        </td>
-                        <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 whitespace-nowrap">
-                          {new Date(
-                            typeof task.deadline === "string"
-                              ? task.deadline.replace(" ", "T")
-                              : task.deadline
-                          ).toLocaleDateString("id-ID", {
-                            day: "numeric",
-                            month: "short",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </td>
-                        <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60">
-                          <PriorityBadge priority={task.priority} />
-                        </td>
-                        <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60">
-                          <StatusPill status={task.status} />
-                        </td>
-                        <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => onOpenTaskDetail && onOpenTaskDetail(task)}
-                              className="px-2 py-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors cursor-pointer active:scale-[0.98]"
-                            >
-                              Detail & diskusi
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => onOpenStatusUpdate && onOpenStatusUpdate(task)}
-                              className="px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-md transition-colors cursor-pointer active:scale-[0.98]"
-                            >
-                              Ubah status
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                    filteredTasks.map((task) => {
+                      const deadlineDate = new Date(
+                        typeof task.deadline === "string"
+                          ? task.deadline.replace(" ", "T")
+                          : task.deadline
+                      );
+                      const isOverdue =
+                        task.status !== "Selesai" &&
+                        !isNaN(deadlineDate.getTime()) &&
+                        deadlineDate < new Date();
+
+                      return (
+                        <tr
+                          key={task.id}
+                          className="hover:bg-blue-50/35 dark:hover:bg-zinc-800/30 transition-colors"
+                        >
+                          <td className="py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 max-w-[240px]">
+                            <div className="font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                              {task.title}
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400 border border-slate-200/80 dark:border-zinc-700/60">
+                                {task.code}
+                              </span>
+                              {task.category && (
+                                <span className="text-[10px] font-medium text-slate-400 dark:text-zinc-500 truncate">
+                                  • {task.category}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-zinc-800 text-[10px] font-bold text-slate-600 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/50">
+                                {task.owner_name
+                                  ? task.owner_name.slice(0, 2).toUpperCase()
+                                  : "ST"}
+                              </span>
+                              <span className="text-xs text-slate-700 dark:text-zinc-300 font-medium">
+                                {task.owner_name || "Staf"}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5 text-xs">
+                              {isOverdue ? (
+                                <span className="inline-flex items-center gap-1 font-semibold text-rose-600 dark:text-rose-400">
+                                  <Clock className="h-3 w-3" />
+                                  {!isNaN(deadlineDate.getTime())
+                                    ? deadlineDate.toLocaleDateString("id-ID", {
+                                        day: "numeric",
+                                        month: "short",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })
+                                    : "-"}
+                                </span>
+                              ) : (
+                                <span className="text-slate-600 dark:text-zinc-400">
+                                  {!isNaN(deadlineDate.getTime())
+                                    ? deadlineDate.toLocaleDateString("id-ID", {
+                                        day: "numeric",
+                                        month: "short",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })
+                                    : "-"}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 whitespace-nowrap">
+                            <PriorityBadge priority={task.priority} />
+                          </td>
+                          <td className="py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 whitespace-nowrap">
+                            <StatusPill status={task.status} />
+                          </td>
+                          <td className="py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => onOpenTaskDetail && onOpenTaskDetail(task)}
+                                className="px-2 py-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-all cursor-pointer active:scale-[0.98]"
+                              >
+                                Detail & diskusi
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => onOpenStatusUpdate && onOpenStatusUpdate(task)}
+                                className="px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-md transition-all cursor-pointer active:scale-[0.98]"
+                              >
+                                Ubah status
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -834,8 +878,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="space-y-3">
               {/* Alert 1 */}
               <div className="flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50/50 p-3 dark:border-rose-900/40 dark:bg-rose-950/20">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-rose-100 text-rose-600 font-bold dark:bg-rose-900/40 dark:text-rose-400 text-xs">
-                  !
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400">
+                  <AlertTriangle className="h-3.5 w-3.5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">

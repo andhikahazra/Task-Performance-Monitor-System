@@ -500,8 +500,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
                       key={task.id}
                       className="hover:bg-blue-50/40 dark:hover:bg-zinc-800/30 transition-colors"
                     >
-                      <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 font-mono font-medium">
-                        {task.code}
+                      <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono font-medium bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400 border border-slate-200/80 dark:border-zinc-700/60">
+                          {task.code}
+                        </span>
                       </td>
                       <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60">
                         <div className="font-semibold text-slate-900 dark:text-zinc-100">

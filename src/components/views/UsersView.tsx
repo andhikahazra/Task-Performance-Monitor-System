@@ -341,7 +341,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ currentUser }) => {
                               ? "Aktif"
                               : u.status === "pending"
                               ? "Menunggu"
-                              : "Terlambat"
+                              : "Ditolak"
                           }
                         >
                           {u.status === "active"
