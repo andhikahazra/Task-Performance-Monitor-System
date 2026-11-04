@@ -31,7 +31,6 @@ import { ToastProvider, useToast } from "@/components/ui/Toast";
 import {
   Lock,
   Mail,
-  User as UserIcon,
   RotateCw,
   Building,
   Briefcase,
@@ -65,23 +64,11 @@ function MainAppContent({ initialView }: { initialView?: ActiveViewType }) {
   const [currentUser, setCurrentUser] = useState<SafeUser | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
 
-  // Unauthenticated tab: "login" | "register"
-  const [authTab, setAuthTab] = useState<"login" | "register">("login");
+  // Login state
   const [loginEmail, setLoginEmail] = useState<string>("");
   const [loginPassword, setLoginPassword] = useState<string>("");
   const [showLoginPassword, setShowLoginPassword] = useState<boolean>(false);
   const [authLoading, setAuthLoading] = useState<boolean>(false);
-
-  // Register form state
-  const [regForm, setRegForm] = useState({
-    full_name: "",
-    email: "",
-    password: "",
-    confirm_password: "",
-    department: "Operasional",
-    job_title: "Staf",
-  });
-  const [showRegPassword, setShowRegPassword] = useState<boolean>(false);
 
   // Authenticated state
   const [activeView, setActiveView] = useState<ActiveViewType>(
@@ -310,57 +297,6 @@ function MainAppContent({ initialView }: { initialView?: ActiveViewType }) {
     }
   };
 
-  // Register Submit
-  const handleRegisterSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!regForm.full_name.trim() || !regForm.email.trim() || !regForm.password) {
-      error("Mohon lengkapi semua kolom wajib.");
-      return;
-    }
-
-    if (regForm.password.length < 6) {
-      error("Password minimal 6 karakter.");
-      return;
-    }
-
-    if (regForm.password !== regForm.confirm_password) {
-      error("Konfirmasi password tidak cocok.");
-      return;
-    }
-
-    setAuthLoading(true);
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          full_name: regForm.full_name,
-          email: regForm.email,
-          password: regForm.password,
-          department: regForm.department,
-          job_title: regForm.job_title,
-        }),
-      });
-
-      const json = await res.json();
-      if (json.success) {
-        success(
-          "Pendaftaran berhasil! Akun Anda kini menunggu persetujuan Super Admin."
-        );
-        setAuthTab("login");
-        setLoginEmail(regForm.email);
-        setLoginPassword("");
-      } else {
-        error(json.message || "Pendaftaran gagal.");
-      }
-    } catch (err) {
-      console.error(err);
-      error("Terjadi kendala jaringan saat mendaftar.");
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
   // Logout Submit
   const handleLogout = async () => {
     try {
@@ -578,20 +514,12 @@ function MainAppContent({ initialView }: { initialView?: ActiveViewType }) {
     );
   }
 
-  // 1. Unauthenticated View (AuthLayout with Login / Register)
+  // 1. Unauthenticated View (AuthLayout with Login)
   if (!currentUser) {
     return (
       <AuthLayout
-        title={
-          authTab === "login"
-            ? "Selamat Datang Kembali"
-            : "Pendaftaran Akun Baru"
-        }
-        subtitle={
-          authTab === "login"
-            ? "Masuk untuk memantau pekerjaan dan progres tim Anda."
-            : "Lengkapi data diri untuk mengajukan akses Management Monitor."
-        }
+        title="Selamat Datang Kembali"
+        subtitle="Masuk untuk memantau pekerjaan dan progres tim Anda."
         footerNote={
           <div>
             Management Monitor &copy; 2026 &middot; Desain Standar Mitra UI &middot;
@@ -600,190 +528,53 @@ function MainAppContent({ initialView }: { initialView?: ActiveViewType }) {
         }
       >
         <div className="space-y-5">
-          {/* Tabs: Masuk / Daftar */}
-          <div className="flex rounded-lg bg-slate-100 dark:bg-zinc-800/80 p-1 border border-slate-200/60 dark:border-zinc-700/60">
-            <button
-              type="button"
-              onClick={() => setAuthTab("login")}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                authTab === "login"
-                  ? "bg-white text-slate-900 shadow-xs border border-slate-200/50 dark:bg-zinc-900 dark:text-zinc-100"
-                  : "text-slate-600 hover:text-slate-900 dark:text-zinc-400 font-medium"
-              }`}
-            >
-              Masuk
-            </button>
-            <button
-              type="button"
-              onClick={() => setAuthTab("register")}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                authTab === "register"
-                  ? "bg-white text-slate-900 shadow-xs border border-slate-200/50 dark:bg-zinc-900 dark:text-zinc-100"
-                  : "text-slate-600 hover:text-slate-900 dark:text-zinc-400 font-medium"
-              }`}
-            >
-              Daftar Akun
-            </button>
-          </div>
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <FormField label="Email" required>
+              <Input
+                type="email"
+                required
+                placeholder="admin@demo.com"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                leftAddon={<Mail className="h-4 w-4" />}
+              />
+            </FormField>
 
-          {/* Login Form */}
-          {authTab === "login" ? (
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
-              <FormField label="Email" required>
-                <Input
-                  type="email"
-                  required
-                  placeholder="admin@demo.com"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  leftAddon={<Mail className="h-4 w-4" />}
-                />
-              </FormField>
-
-              <FormField label="Password" required>
-                <Input
-                  type={showLoginPassword ? "text" : "password"}
-                  required
-                  placeholder="••••••••"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  leftAddon={<Lock className="h-4 w-4" />}
-                  rightAddon={
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowLoginPassword(!showLoginPassword)
-                      }
-                      className="cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300"
-                    >
-                      {showLoginPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                  }
-                />
-              </FormField>
-
-              <Button
-                type="submit"
-                variant="primary"
-                className="w-full py-2.5 font-semibold text-sm shadow-xs"
-                isLoading={authLoading}
-              >
-                Masuk ke Sistem
-              </Button>
-            </form>
-          ) : (
-            /* Register Form */
-            <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
-              <FormField label="Nama Lengkap" required>
-                <Input
-                  required
-                  placeholder="Contoh: Siti Rahmawati"
-                  value={regForm.full_name}
-                  onChange={(e) =>
-                    setRegForm({ ...regForm, full_name: e.target.value })
-                  }
-                  leftAddon={<UserIcon className="h-4 w-4" />}
-                />
-              </FormField>
-
-              <FormField label="Email" required>
-                <Input
-                  type="email"
-                  required
-                  placeholder="siti@perusahaan.com"
-                  value={regForm.email}
-                  onChange={(e) =>
-                    setRegForm({ ...regForm, email: e.target.value })
-                  }
-                  leftAddon={<Mail className="h-4 w-4" />}
-                />
-              </FormField>
-
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Departemen" required>
-                  <Select
-                    value={regForm.department}
-                    onChange={(e) =>
-                      setRegForm({ ...regForm, department: e.target.value })
+            <FormField label="Password" required>
+              <Input
+                type={showLoginPassword ? "text" : "password"}
+                required
+                placeholder="••••••••"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                leftAddon={<Lock className="h-4 w-4" />}
+                rightAddon={
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowLoginPassword(!showLoginPassword)
                     }
-                    options={[
-                      "Operasional",
-                      "Administrasi",
-                      "Proyek",
-                      "Keuangan",
-                      "Teknologi",
-                    ]}
-                  />
-                </FormField>
+                    className="cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300"
+                  >
+                    {showLoginPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                }
+              />
+            </FormField>
 
-                <FormField label="Jabatan" required>
-                  <Input
-                    required
-                    placeholder="Staf / Koordinator"
-                    value={regForm.job_title}
-                    onChange={(e) =>
-                      setRegForm({ ...regForm, job_title: e.target.value })
-                    }
-                  />
-                </FormField>
-              </div>
-
-              <FormField label="Password" required hint="Minimal 6 karakter">
-                <Input
-                  type={showRegPassword ? "text" : "password"}
-                  required
-                  placeholder="••••••••"
-                  value={regForm.password}
-                  onChange={(e) =>
-                    setRegForm({ ...regForm, password: e.target.value })
-                  }
-                  leftAddon={<Lock className="h-4 w-4" />}
-                  rightAddon={
-                    <button
-                      type="button"
-                      onClick={() => setShowRegPassword(!showRegPassword)}
-                      className="cursor-pointer text-slate-400 hover:text-slate-600"
-                    >
-                      {showRegPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                  }
-                />
-              </FormField>
-
-              <FormField label="Konfirmasi Password" required>
-                <Input
-                  type={showRegPassword ? "text" : "password"}
-                  required
-                  placeholder="••••••••"
-                  value={regForm.confirm_password}
-                  onChange={(e) =>
-                    setRegForm({
-                      ...regForm,
-                      confirm_password: e.target.value,
-                    })
-                  }
-                  leftAddon={<Lock className="h-4 w-4" />}
-                />
-              </FormField>
-
-              <Button
-                type="submit"
-                variant="primary"
-                className="w-full mt-2 py-2.5 font-semibold text-sm shadow-xs"
-                isLoading={authLoading}
-              >
-                Daftar Akun Baru
-              </Button>
-            </form>
-          )}
+            <Button
+              type="submit"
+              variant="primary"
+              className="w-full py-2.5 font-semibold text-sm shadow-xs"
+              isLoading={authLoading}
+            >
+              Masuk ke Sistem
+            </Button>
+          </form>
         </div>
       </AuthLayout>
     );

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Check, Palette } from "lucide-react";
+import React, { useEffect } from "react";
+import { Check } from "lucide-react";
 
 export interface AuthLayoutProps {
   children: React.ReactNode;
@@ -16,25 +16,13 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   subtitle = "Masuk untuk melanjutkan pekerjaan Anda.",
   footerNote,
 }) => {
-  const [activeTheme, setActiveTheme] = useState<string>("light");
-
   useEffect(() => {
     try {
       const saved = localStorage.getItem("mm-theme") || "light";
-      setActiveTheme(saved);
       document.documentElement.setAttribute("data-theme", saved);
       document.documentElement.classList.toggle("dark", saved === "midnight");
     } catch {}
   }, []);
-
-  const handleThemeChange = (newTheme: string) => {
-    setActiveTheme(newTheme);
-    try {
-      localStorage.setItem("mm-theme", newTheme);
-      document.documentElement.setAttribute("data-theme", newTheme);
-      document.documentElement.classList.toggle("dark", newTheme === "midnight");
-    } catch {}
-  };
 
   const highlights = [
     "Pantau pekerjaan dan tenggat waktu",
@@ -110,23 +98,6 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
 
       {/* Right Form Viewport */}
       <section className="relative flex flex-col items-center justify-center p-6 sm:p-10 lg:p-10 min-h-screen">
-        {/* Top-right theme selector */}
-        <div className="absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/80 px-2.5 py-1 text-xs backdrop-blur-xs dark:border-zinc-800 dark:bg-zinc-900/80 shadow-2xs">
-          <Palette className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-          <select
-            value={activeTheme}
-            onChange={(e) => handleThemeChange(e.target.value)}
-            className="bg-transparent text-xs font-semibold text-slate-700 dark:text-zinc-200 outline-none cursor-pointer pr-1"
-          >
-            <option value="light">Light</option>
-            <option value="ocean">Ocean</option>
-            <option value="emerald">Emerald</option>
-            <option value="violet">Violet</option>
-            <option value="sunset">Sunset</option>
-            <option value="midnight">Midnight</option>
-          </select>
-        </div>
-
         <div className="w-full max-w-[420px] rounded-2xl border border-slate-200/90 bg-white p-7 sm:p-9 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/90 space-y-6">
           {/* Mobile Brand Header */}
           <div className="flex lg:hidden flex-col items-center text-center space-y-2 mb-2">
