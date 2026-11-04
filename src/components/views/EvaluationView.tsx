@@ -17,6 +17,7 @@ import { KpiCard } from "@/components/ui/KpiCard";
 import { PanelCard } from "@/components/ui/PanelCard";
 import { Select } from "@/components/ui/Select";
 import { StatusPill } from "@/components/ui/StatusPill";
+import { Pagination } from "@/components/ui/Pagination";
 import { useToast } from "@/components/ui/Toast";
 
 export interface EvaluationViewProps {
@@ -206,6 +207,39 @@ export const EvaluationView: React.FC<EvaluationViewProps> = ({ user }) => {
       }))
     );
   }, [data]);
+
+  // Leaderboard Pagination State
+  const [leaderboardPage, setLeaderboardPage] = useState<number>(1);
+  const [leaderboardPageSize, setLeaderboardPageSize] = useState<number>(10);
+
+  // Breakdown Tasks Pagination State
+  const [breakdownPage, setBreakdownPage] = useState<number>(1);
+  const [breakdownPageSize, setBreakdownPageSize] = useState<number>(10);
+
+  // Reset pagination when period or user filter changes
+  useEffect(() => {
+    setLeaderboardPage(1);
+    setBreakdownPage(1);
+  }, [periodMode, dateParam, selectedUserId]);
+
+  // Paginated Leaderboard Results
+  const totalLeaderboard = data?.results.length || 0;
+  const totalLeaderboardPages = Math.ceil(totalLeaderboard / leaderboardPageSize) || 1;
+
+  const paginatedLeaderboardResults = useMemo(() => {
+    if (!data?.results) return [];
+    const start = (leaderboardPage - 1) * leaderboardPageSize;
+    return data.results.slice(start, start + leaderboardPageSize);
+  }, [data?.results, leaderboardPage, leaderboardPageSize]);
+
+  // Paginated Tasks Breakdown
+  const totalBreakdown = evaluatedTasksBreakdown.length;
+  const totalBreakdownPages = Math.ceil(totalBreakdown / breakdownPageSize) || 1;
+
+  const paginatedBreakdownTasks = useMemo(() => {
+    const start = (breakdownPage - 1) * breakdownPageSize;
+    return evaluatedTasksBreakdown.slice(start, start + breakdownPageSize);
+  }, [evaluatedTasksBreakdown, breakdownPage, breakdownPageSize]);
 
   return (
     <div className="space-y-6">
@@ -458,62 +492,102 @@ export const EvaluationView: React.FC<EvaluationViewProps> = ({ user }) => {
                   </td>
                 </tr>
               ) : (
-                data.results.map((item, idx) => (
-                  <tr
-                    key={item.userId}
-                    className="hover:bg-blue-50/40 dark:hover:bg-zinc-800/30 transition-colors"
-                  >
-                    <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 font-bold text-slate-500">
-                      {item.score !== null ? `#${idx + 1}` : "—"}
-                    </td>
-                    <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60">
-                      <div className="font-semibold text-slate-900 dark:text-zinc-100">
-                        {item.userName}
-                      </div>
-                      <div className="text-[10px] text-slate-400">
-                        {item.department}
-                      </div>
-                    </td>
-                    <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60">
-                      {item.dueCount}
-                    </td>
-                    <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60">
-                      {item.completedCount}
-                    </td>
-                    <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 font-mono">
-                      {item.completionRate !== null
-                        ? `${item.completionRate.toFixed(1).replace(".", ",")}%`
-                        : "—"}
-                    </td>
-                    <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 font-mono">
-                      {item.timelyRate !== null
-                        ? `${item.timelyRate.toFixed(1).replace(".", ",")}%`
-                        : "—"}
-                    </td>
-                    <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 font-bold text-slate-900 dark:text-zinc-100 font-mono">
-                      {item.score !== null ? item.score.toFixed(1).replace(".", ",") : "—"}
-                    </td>
-                    <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 text-right">
-                      <StatusPill
-                        status={
-                          item.score === null
-                            ? "Belum Mulai"
-                            : item.score >= 80
-                            ? "Selesai"
-                            : item.score >= 70
-                            ? "Pending"
-                            : "Terlambat"
-                        }
-                      >
-                        {item.category}
-                      </StatusPill>
-                    </td>
-                  </tr>
-                ))
+                paginatedLeaderboardResults.map((item, idx) => {
+                  const globalRank = (leaderboardPage - 1) * leaderboardPageSize + idx + 1;
+                  return (
+                    <tr
+                      key={item.userId}
+                      className="hover:bg-blue-50/40 dark:hover:bg-zinc-800/30 transition-colors"
+                    >
+                      <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 font-bold">
+                        {item.score !== null ? (
+                          globalRank === 1 ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/60 shadow-xs">
+                              <Award className="w-3.5 h-3.5 text-amber-500" />
+                              #1
+                            </span>
+                          ) : globalRank === 2 ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 shadow-xs">
+                              <Award className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-400" />
+                              #2
+                            </span>
+                          ) : globalRank === 3 ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100/60 text-amber-800 border border-amber-300/80 dark:bg-amber-950/30 dark:text-amber-500 dark:border-amber-900 shadow-xs">
+                              <Award className="w-3.5 h-3.5 text-amber-700 dark:text-amber-600" />
+                              #3
+                            </span>
+                          ) : (
+                            <span className="text-slate-500 dark:text-zinc-400 font-mono text-xs font-semibold px-2 py-0.5">
+                              #{globalRank}
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-slate-400 dark:text-zinc-500 font-mono text-xs">
+                            —
+                          </span>
+                        )}
+                      </td>
+                      <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60">
+                        <div className="font-semibold text-slate-900 dark:text-zinc-100">
+                          {item.userName}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          {item.department}
+                        </div>
+                      </td>
+                      <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 font-mono">
+                        {item.dueCount}
+                      </td>
+                      <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 font-mono">
+                        {item.completedCount}
+                      </td>
+                      <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 font-mono">
+                        {item.completionRate !== null
+                          ? `${item.completionRate.toFixed(1).replace(".", ",")}%`
+                          : "—"}
+                      </td>
+                      <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 font-mono">
+                        {item.timelyRate !== null
+                          ? `${item.timelyRate.toFixed(1).replace(".", ",")}%`
+                          : "—"}
+                      </td>
+                      <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 font-bold text-slate-900 dark:text-zinc-100 font-mono">
+                        {item.score !== null ? item.score.toFixed(1).replace(".", ",") : "—"}
+                      </td>
+                      <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 text-right">
+                        <StatusPill
+                          status={
+                            item.score === null
+                              ? "Belum Mulai"
+                              : item.score >= 80
+                              ? "Selesai"
+                              : item.score >= 70
+                              ? "Pending"
+                              : "Terlambat"
+                          }
+                        >
+                          {item.category}
+                        </StatusPill>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
+        {totalLeaderboard > 0 && (
+          <Pagination
+            currentPage={leaderboardPage}
+            totalPages={totalLeaderboardPages}
+            totalItems={totalLeaderboard}
+            pageSize={leaderboardPageSize}
+            onPageChange={setLeaderboardPage}
+            onPageSizeChange={setLeaderboardPageSize}
+            pageSizeOptions={[10, 20, 50]}
+            className="mt-4"
+          />
+        )}
       </PanelCard>
 
       {/* Operational Insights List */}
@@ -584,17 +658,23 @@ export const EvaluationView: React.FC<EvaluationViewProps> = ({ user }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-zinc-800">
-                {evaluatedTasksBreakdown.map((t) => (
+                {paginatedBreakdownTasks.map((t) => (
                   <tr key={t.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/30">
                     <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60">
-                      <span className="font-semibold text-slate-900 dark:text-zinc-100">
+                      <div className="font-semibold text-slate-900 dark:text-zinc-100">
                         {t.title}
-                      </span>
+                      </div>
+                      {t.code && (
+                        <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 text-[10px] font-mono font-medium text-slate-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+                          {t.code}
+                        </span>
+                      )}
                     </td>
                     <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60">
-                      {t.owner_name}
+                      <div className="font-medium text-slate-900 dark:text-zinc-100">{t.owner_name}</div>
+                      <div className="text-[10px] text-slate-400">{t.department}</div>
                     </td>
-                    <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60">
+                    <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 font-mono">
                       {new Date(t.deadline).toLocaleDateString("id-ID", {
                         day: "numeric",
                         month: "short",
@@ -606,23 +686,42 @@ export const EvaluationView: React.FC<EvaluationViewProps> = ({ user }) => {
                       <StatusPill status={t.status} />
                     </td>
                     <td className="text-slate-800 dark:text-zinc-200 text-sm py-3 px-3.5 border-b border-slate-100 dark:border-zinc-800/60 text-right">
-                      <span
-                        className={`font-semibold text-[11px] ${
-                          t.onTime ? "text-emerald-600" : "text-rose-600"
-                        }`}
-                      >
-                        {t.status === "Selesai"
-                          ? t.onTime
-                            ? "Tepat Waktu"
-                            : "Terlambat"
-                          : "Dalam Proses"}
-                      </span>
+                      {t.status === "Selesai" ? (
+                        t.onTime ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60">
+                            <CheckCircle className="w-3 h-3 text-emerald-500" />
+                            Tepat Waktu
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800/60">
+                            <AlertTriangle className="w-3 h-3 text-rose-500" />
+                            Terlambat
+                          </span>
+                        )
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/60">
+                          <Clock className="w-3 h-3 text-blue-500" />
+                          Dalam Proses
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {totalBreakdown > 0 && (
+            <Pagination
+              currentPage={breakdownPage}
+              totalPages={totalBreakdownPages}
+              totalItems={totalBreakdown}
+              pageSize={breakdownPageSize}
+              onPageChange={setBreakdownPage}
+              onPageSizeChange={setBreakdownPageSize}
+              pageSizeOptions={[10, 25, 50]}
+              className="mt-4"
+            />
+          )}
         </PanelCard>
       )}
     </div>
